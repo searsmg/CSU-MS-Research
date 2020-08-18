@@ -2,6 +2,8 @@
 
 library(ggplot2)
 
+############DATA PREP#############
+
 #set working directory and csv file
 setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Field_Data_071120/Processed/")
 #read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
@@ -17,6 +19,8 @@ HD1$date <- c("Sun Apr 19 2020 16:01:06 GMT-0600 (MDT)",
              "Sun Apr 19 2020 17:01:06 GMT-0600 (MDT)")
 HD1$date <- as.POSIXct(HD1$date, , "%a %b %d %Y %H:%M:%S")
 
+
+############PLOTS##########################
 
 #Color scheme for plots
 colors3 <- c("dark grey","light blue","red")
