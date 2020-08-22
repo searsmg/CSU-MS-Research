@@ -1,11 +1,35 @@
 #lapse rate analysis for melt season 2020
 
 library(ggplot2)
+library(lubridate)
+library(dplyr)
+
+rm(list = ls()) 
 
 ############DATA PREP#############
 
 #set working directory and csv file
 setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Field_Data_071120/Processed/")
+
+#load in all csv files from wd
+path <- "C:/Users/sears/Documents/Research/Snow_Hydro_Research/Field_Data_071120/Processed/"
+files <- list.files(path=path, pattern="*.csv")
+for(file in files)
+{
+  perpos <- which(strsplit(file, "")[[1]]==".")
+  assign(
+    gsub(" ","",substr(file, 1, perpos-1)), 
+    read.csv(paste(path,file,sep="")))
+}
+
+#list all df
+#df.list<- list("HD1-62", "HD2-54", "HD3-73", "HD4-77", "HD5-74", "HD6-76", "HD7-75", "MP1-56", #"MP2-36", "MP3-40", "MP4-55", "MP5-61", "MP6-60", "MP7-38")
+
+
+
+
+
+              
 #read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
 HD1 <- read.csv(file = "HD1-62.csv", skip=4, header=TRUE, stringsAsFactors = FALSE) 
 HD1 <-HD1[-c(6:12)]
@@ -17,8 +41,10 @@ HD1<-na.omit(HD1)
 HD1$date <- c("Sun Apr 19 2020 16:01:06 GMT-0600 (MDT)", 
              "Sun Apr 19 2020 17:01:06 GMT-0600 (MDT)", 
              "Sun Apr 19 2020 17:01:06 GMT-0600 (MDT)")
+
 HD1$date <- as.POSIXct(HD1$date, , "%a %b %d %Y %H:%M:%S")
 
+#######AGGREGATE##########
 
 ############PLOTS##########################
 
