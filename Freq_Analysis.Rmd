@@ -15,13 +15,13 @@ library(RNRCS)
 
 ```{r}
 #download Joe Wright SNOTEL data from WY 2010 to present and add as a df
-JW_SNOTEL <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2009-10-01', DayEnd = '2020-08-27')
+JW_SNOTEL <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "daily", DayBgn = '2009-10-01', DayEnd = '2020-08-27')
 
 #add a column for SWE in mm
 JW_SNOTEL$SWE_mm <- JW_SNOTEL$Snow.Water.Equivalent..in.*25.4
 
 #export the df to csv
-write.csv(JW_SNOTEL,"C:/Users/sears/Documents/Research/Snow_Hydro_Research/Fire/JW_SNOTEL.csv", row.names = TRUE)
+write.csv(JW_SNOTEL,"C:/Users/sears/Documents/Research/Snow_Hydro_Research/Fire/JW_SNOTEL_daily.csv", row.names = TRUE)
 
 #determine NAs in SWE_mm
 sum(is.na(JW_SNOTEL$SWE_mm))
