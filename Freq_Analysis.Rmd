@@ -1,5 +1,5 @@
 ---
-title: "Cameron Peak Fire Frequency Analysis"
+title: "Cameron Peak Fire - Precipitation and Snowmelt Frequency Analysis"
 author: "MGS"
 date: "8/28/2020"
 output: html_document
@@ -9,12 +9,17 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Download all libraries used in the script.
+
 ```{r}
-library(RNRCS)
-library(lubridate)
-library(dplyr)
-library(weathermetrics)
+library(RNRCS) # pull SNOTEL data
+library(lubridate) # fix date
+library(dplyr) # data manipulation
+library(weathermetrics) # F to C conversion
+library(knitr) #knit the data
 ```
+
+In this code block, the data is being downloaded from the NRCS website, put into proper units, and columns are being added for hourly precip, SWE, and snow depth (not cumulative). 
 
 ```{r}
 #download Joe Wright SNOTEL data from WY 2010 to present and add as a df. Also, get date into correct format.
@@ -23,8 +28,8 @@ JWhourly_SNO <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hour
 
 #get into correct units and make sure the new columns are numeric (except date)
 JWhourly_SNO$AirTemp_C <- fahrenheit.to.celsius(JWhourly_SNO$Air.Temperature.Observed..degF.)
-JWhourly_SNO$SWE_mm <- JWhourly_SNO$Snow.Water.Equivalent..in.*25.4
-JWhourly_SNO$SnowDepth_mm<-JWhourly_SNO$Snow.Depth..in.*25.4
+JWhourly_SNO$CumSWE_mm <- JWhourly_SNO$Snow.Water.Equivalent..in.*25.4
+JWhourly_SNO$CumSnowDepth_mm<-JWhourly_SNO$Snow.Depth..in.*25.4
 JWhourly_SNO$CumPrecip_mm<-JWhourly_SNO$Precipitation.Accumulation..in. *25.4
 JWhourly_SNO[2:9] <- lapply(JWhourly_SNO[2:9], as.numeric)
 
@@ -32,15 +37,28 @@ JWhourly_SNO[2:9] <- lapply(JWhourly_SNO[2:9], as.numeric)
 JW_hourly <- JWhourly_SNO[c(1,6:9)]
 
 #NOTE TO SELF: UPDATE THIS SECTION AND SNOW D, SWE. ALSO, UPDATE COLUMNS NAMES ABOVE TO INDICATE IT IS CUMULATIVE. Since Precip is cumulative - we need to find the total daily values
-JW_SNOTEL$DPrecip_mm <- ave(JW_SNOTEL$CumPrecip_mm, FUN=function(x) c(0, diff(x)))
+JW_hourly$Precip_mm <- ave(JW_hourly$CumPrecip_mm, FUN=function(x) c(0, diff(x)))
+JW_hourly$SnowDepth_mm <- ave(JW_hourly$CumSnowDepth_mm, FUN=function(x) c(0, diff(x)))
+JW_hourly$SWE_mm <- ave(JW_hourly$CumSWE_mm, FUN=function(x) c(0, diff(x)))
 
+#determine NAs in 10 yr dataset
+sum(is.na(JW_hourly$SWE_mm))
+sum(is.na(JW_hourly$Precip_mm))
+sum(is.na(JW_hourly$SnowDepth_mm))
 
+```
 
-#export the df to csv
-write.csv(JW_SNOTEL,"C:/Users/sears/Documents/Research/Snow_Hydro_Research/Fire/JW_SNOTEL_daily.csv", row.names = TRUE)
+The following blode of code is to determine if the precip is rain or snow. If SWE is 0 mm, the precip is rain and if it is greater than 0 mm it is snow.
 
-#determine NAs in SWE_mm
-sum(is.na(JW_SNOTEL$SWE_mm))
+```{r}
+
+if (JW_hourly$SWE_mm = 0) {JW_hourly$RainPrecip_mm = JW_hourly$Precip_mm}
+
+  
+  {JW_hourly$Precip_mm = JW_hourly$SnowPrecip_mm} 
+
+else {JW_hourly$RainPrecip_mm = JW_hourly$Precip_mm}
+
 
 ```
 
