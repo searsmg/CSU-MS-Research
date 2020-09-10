@@ -17,6 +17,7 @@ library(lubridate) # fix date
 library(dplyr) # data manipulation
 library(weathermetrics) # F to C conversion
 library(knitr) #knit the data
+library(ggplot2) # plot data
 ```
 
 In this code block, the data is being downloaded from the NRCS website, put into proper units, and columns are being added for hourly precip, SWE, and snow depth (not cumulative). 
@@ -36,7 +37,16 @@ JWhourly_SNO[2:9] <- lapply(JWhourly_SNO[2:9], as.numeric)
 #create new df that has all the proper units from above
 JW_hourly <- JWhourly_SNO[c(1,6:9)]
 
-#NOTE TO SELF: UPDATE THIS SECTION AND SNOW D, SWE. ALSO, UPDATE COLUMNS NAMES ABOVE TO INDICATE IT IS CUMULATIVE. Since Precip is cumulative - we need to find the total daily values
+#remove negative values
+JW_hourly <- JW_hourly %>%
+  filter(CumSWE_mm >= 0, CumPrecip_mm >= 0, CumSnowDepth_mm >= 0)
+
+#Add columns to get hourly data instead of cumulative 
+JW_hourly %>%
+  mutate(Precip_mm = CumPrecip_mm - lag(CumPrecip_mm), 
+         SnowDepth_mm = CumSnowDepth_mm - lag(CumSnowDepth_mm), 
+         SWE_mm = CumSWE_mm - lag(CumSWE_mm))
+
 JW_hourly$Precip_mm <- ave(JW_hourly$CumPrecip_mm, FUN=function(x) c(0, diff(x)))
 JW_hourly$SnowDepth_mm <- ave(JW_hourly$CumSnowDepth_mm, FUN=function(x) c(0, diff(x)))
 JW_hourly$SWE_mm <- ave(JW_hourly$CumSWE_mm, FUN=function(x) c(0, diff(x)))
@@ -52,13 +62,10 @@ The following blode of code is to determine if the precip is rain or snow. If SW
 
 ```{r}
 
-if (JW_hourly$SWE_mm = 0) {JW_hourly$RainPrecip_mm = JW_hourly$Precip_mm}
+ifelse(JW_hourly$SWE_mm > 0, JW_hourly$SnoPrecip_mm <- JW_hourly$Precip_mm, JW_hourly$Rain_mm <- JW_hourly$Precip_mm)
 
-  
-  {JW_hourly$Precip_mm = JW_hourly$SnowPrecip_mm} 
 
-else {JW_hourly$RainPrecip_mm = JW_hourly$Precip_mm}
-
+ggplot(JW_hourly, aes(x=Date, y=Rain_mm)) + geom_line ()
 
 ```
 
