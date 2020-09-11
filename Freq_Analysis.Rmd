@@ -1,5 +1,5 @@
 ---
-title: "Cameron Peak Fire - Precipitation and Snowmelt Frequency Analysis"
+title: "Cameron Peak Fire - Precipitation and Snowmelt Analysis"
 author: "MGS"
 date: "8/28/2020"
 output: html_document
@@ -27,6 +27,8 @@ In this code block, the data is being downloaded from the NRCS website, put into
 JWhourly_SNO <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2009-10-01', DayEnd = '2020-08-27') %>%
   mutate(Date = ymd_hm(Date))
 
+write.csv(JWhourly_SNO,"C:/Users/sears/Documents/Research/Snow_Hydro_Research/JW_Hourly_test.csv", row.names = FALSE)
+
 #get into correct units and make sure the new columns are numeric (except date)
 JWhourly_SNO$AirTemp_C <- fahrenheit.to.celsius(JWhourly_SNO$Air.Temperature.Observed..degF.)
 JWhourly_SNO$CumSWE_mm <- JWhourly_SNO$Snow.Water.Equivalent..in.*25.4
@@ -36,6 +38,19 @@ JWhourly_SNO[2:9] <- lapply(JWhourly_SNO[2:9], as.numeric)
 
 #create new df that has all the proper units from above
 JW_hourly <- JWhourly_SNO[c(1,6:9)]
+
+#shitty way of data wrangling
+write.csv(JW_hourly,"C:/Users/sears/Documents/Research/Snow_Hydro_Research/JW_Hourly_test.csv", row.names = FALSE)
+
+JW_hourly <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/JW_Hourly.csv", header = TRUE)%>%
+  mutate(Date = mdy_hm(Date))
+
+
+```
+
+The following blode of code is to determine if the precip is rain or snow. If SWE is 0 mm, the precip is rain and if it is greater than 0 mm it is snow.
+
+```{r}
 
 #remove negative values
 JW_hourly <- JW_hourly %>%
@@ -56,11 +71,10 @@ sum(is.na(JW_hourly$SWE_mm))
 sum(is.na(JW_hourly$Precip_mm))
 sum(is.na(JW_hourly$SnowDepth_mm))
 
-```
 
-The following blode of code is to determine if the precip is rain or snow. If SWE is 0 mm, the precip is rain and if it is greater than 0 mm it is snow.
 
-```{r}
+
+
 
 ifelse(JW_hourly$SWE_mm > 0, JW_hourly$SnoPrecip_mm <- JW_hourly$Precip_mm, JW_hourly$Rain_mm <- JW_hourly$Precip_mm)
 
