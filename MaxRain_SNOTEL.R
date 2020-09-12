@@ -7,12 +7,14 @@ library(lubridate)
 library(dataRetrieval)
 library(Hmisc)
 
+setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Max_rain_events/")
+
 #download Joe Wright SNOTEL data from WY 2010 to present and add as a df. Also, get date into correct format.
-JWhourly_SNO <- grabNRCS.data(network = "SNTL", site_id = 1122, timescale = "hourly", DayBgn = '2009-10-01', DayEnd = '2020-08-27') %>%
+JWhourly_SNO <- grabNRCS.data(network = "SNTL", site_id = 1161, timescale = "hourly", DayBgn = '2009-10-01', DayEnd = '2020-08-27') %>%
   mutate(Date = ymd_hm(Date))
 
 #write csv of raw file and fix a few things
-write.csv(JWhourly_SNO,"C:/Users/sears/Documents/Research/Snow_Hydro_Research/Max_rain_events/HL_Hourly_WY10to20.csv", row.names = FALSE)
+write.csv(JWhourly_SNO,"C:/Users/sears/Documents/Research/Snow_Hydro_Research/Max_rain_events/BM_Hourly_WY10to20_fix.csv", row.names = FALSE)
 
 #read in hourly data for the 4 SNOTEL sites
 Hourly_Rain <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Max_rain_events/SNOTEL_rain.csv") %>%
@@ -31,13 +33,15 @@ PlotTheme = theme(axis.text=element_text(size=20),    #Text size for axis tick m
                   plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      #Text size and alignment for plot title
                   legend.title=element_text(size=24),                                                                    #Text size of legend category labels
                   legend.text=element_text(size=20),                                                                   #Text size of legend title
-                  legend.position = "bottom")              
+                  legend.position = "bottom")   
 
+colors1 <- c("blue", "green4", "red", "purple")
+colors2 <- c("black", "black", "black", "black")
 ################################################################################################
 ##PROCESS SOME DATA
 
 #factor so SNOTEL sites stay together
-###Hourly_Rain$SNOTEL <- factor(Hourly_Rain$SNOTEL, levels=c("Joe Wright", "Hourglass Lake", "Black Mountain", "Copeland Lake"))
+Hourly_Rain$SNOTEL <- factor(Hourly_Rain$SNOTEL, levels=c("Joe Wright", "Hourglass Lake", "Black Mountain", "Copeland Lake"))
 
 #add a WY column
 Hourly_Rain <- addWaterYear(Hourly_Rain)
@@ -50,4 +54,15 @@ WYLabels = c("2010", "2011", "2012", "2013", "2014", "2015", "2016","2017", "201
 
 PLOT ="Annual Max Bar Plot"
 custom_breaks <- seq(2010, 2020, 1)
-ggplot(Annual_Max, aes(x=waterYear, y = Rain_mm, fill=SNOTEL)) + geom_col() + labs(x="Water Year", y= "Rain [mm]") + scale_x_discrete(breaks = custom_breaks)
+ggplot(Annual_Max, aes(x=waterYear, y = Rain_mm, fill=factor(SNOTEL))) + geom_col(position = "dodge2") + labs(x="Water Year", y= "Rain (mm)") + scale_x_continuous(breaks = custom_breaks) + PlotTheme 
+
+ggsave(paste(PLOT,".png",sep=""), width = PlotWidth, height = PlotHeight)
+
+PLOT = "Annual Max Boxplot"
+ggplot(Annual_Max, aes(x=SNOTEL, y = Rain_mm, fill=SNOTEL)) + geom_boxplot(outlier.shape=NA) + PlotTheme +  labs(y="Rain (mm)", x="SNOTEL") + scale_color_manual(values = colors1)
+
+###geom_jitter(size=3, width=0.01) + 
+ggsave(paste(PLOT,".png",sep=""), width = PlotWidth, height = PlotHeight)
+
+write.csv(Annual_Max,"C:/Users/sears/Documents/Research/Snow_Hydro_Research/Max_rain_events/Annual_Max_Summary.csv", row.names = FALSE)
+
