@@ -57,4 +57,5 @@ ggplot(Annual_MeltMax, aes(x=SNOTEL, y = Snowmelt_mm, fill=SNOTEL)) + geom_boxpl
 ###geom_jitter(size=3, width=0.01) + 
 ggsave(paste(PLOT,".png",sep=""), width = PlotWidth, height = PlotHeight)
 
+write.csv(Annual_MeltMax,"C:/Users/sears/Documents/Research/Snow_Hydro_Research/Max_rain_events/Annual_SnowmeltMax_Summary.csv", row.names = FALSE)
 
