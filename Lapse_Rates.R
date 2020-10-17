@@ -55,12 +55,12 @@ MP_DailyAvgT <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/
     mutate(Date = mdy(Date))
 
 PLOT = "MP Daily Avg T_all"
-ggplot(MP_DailyAvgT) + geom_line(aes(x=Date, y=MP1, color="MP1"), size=1) + geom_line(aes(x=Date, y=MP2, color="MP2"), size=1) + geom_line(aes(x=Date, y=MP3, color="MP3"), size=1) + geom_line(aes(x=Date, y=MP4, color="MP4"), size=1) + geom_line(aes(x=Date, y=MP5, color="MP5"), size=1) + geom_line(aes(x=Date, y=MP6, color="MP6"), size=1) + geom_line(aes(x=Date, y=MP7, color="MP7"), size=1) + PlotTheme + scale_colour_brewer(palette="RdPu") + labs(x="Date", y="Daily Avg Temp (deg C")
+ggplot(MP_DailyAvgT) + geom_line(aes(x=Date, y=MP1, color="MP1"), size=1) + geom_line(aes(x=Date, y=MP2, color="MP2"), size=1) + geom_line(aes(x=Date, y=MP3, color="MP3"), size=1) + geom_line(aes(x=Date, y=MP4, color="MP4"), size=1) + geom_line(aes(x=Date, y=MP5, color="MP5"), size=1) + geom_line(aes(x=Date, y=MP6, color="MP6"), size=1) + geom_line(aes(x=Date, y=MP7, color="MP7"), size=1) + PlotTheme + scale_colour_brewer(palette="RdPu") + labs(x="Date", y="Daily Avg Temp (deg C)")
 
 ggsave(paste(PLOT,".png",sep=""), width = PlotWidth, height = PlotHeight)
 
 PLOT = "MP Daily Avg T"
-ggplot(MP_DailyAvgT) + geom_line(aes(x=Date, y=MP1, color="MP1"), size=1) + geom_line(aes(x=Date, y=MP2, color="MP2"), size=1) + geom_line(aes(x=Date, y=MP4, color="MP4"), size=1) + geom_line(aes(x=Date, y=MP5, color="MP5"), size=1) + geom_line(aes(x=Date, y=MP6, color="MP6"), size=1) + geom_line(aes(x=Date, y=MP7, color="MP7"), size=1) + scale_colour_brewer(palette="Spectral") + theme_classic() + PlotTheme + labs(x="Date", y="Daily Avg Temp (deg C") 
+ggplot(MP_DailyAvgT) + geom_line(aes(x=Date, y=MP1, color="MP1"), size=1) + geom_line(aes(x=Date, y=MP2, color="MP2"), size=1) + geom_line(aes(x=Date, y=MP4, color="MP4"), size=1) + geom_line(aes(x=Date, y=MP5, color="MP5"), size=1) + geom_line(aes(x=Date, y=MP6, color="MP6"), size=1) + geom_line(aes(x=Date, y=MP7, color="MP7"), size=1) + scale_colour_brewer(palette="Spectral") + theme_classic() + PlotTheme + labs(x="Date", y="Daily Avg Temp (deg C)") 
 
 ggsave(paste(PLOT,".png",sep=""), width = PlotWidth, height = PlotHeight)
 
@@ -100,6 +100,11 @@ HD_DailyStats <- HD_Daily %>%
 
 DailyStats <- rbind(HD_DailyStats, MP_DailyStats)
 
+AvgMinMax_all <- DailyStats %>%
+  group_by(Elevation, Side) %>% 
+  summarize(AvgMin = mean(MinT),
+           AvgMax = mean(MaxT))
+
 ##################################
 AvgT_all <- MP_HD_All %>%
   group_by(ID, Elevation, Side) %>%
@@ -111,21 +116,15 @@ ggplot(AvgT_all) + geom_point(aes(x=Elevation, y=AvgT, shape=Side), size=3) + Pl
 ggsave(paste(PLOT,".png",sep=""), width = PlotWidth, height = PlotHeight)
 
 ####################################
-MinT_all <- MP_HD_All %>%
-  group_by(ID, Elevation, Side) %>%
-  summarize(MinT = min(temperature))
 
-PLOT="Avg Min T - All vs. Elevation"
-ggplot(MinT_all) + geom_point(aes(x=Elevation, y=MinT, shape=Side), size=3) + PlotTheme + labs(x="Elevation (m)", y="Avg Min Temp (deg C)")
+PLOT="Avg Daily Min T - All vs. Elevation"
+ggplot(AvgMinMax_all) + geom_point(aes(x=Elevation, y=AvgMin, shape=Side), size=3) + PlotTheme + labs(x="Elevation (m)", y="Avg Daily Min Temp (deg C)")
 
 ggsave(paste(PLOT,".png",sep=""), width = PlotWidth, height = PlotHeight)
 
 ###########################################
-MaxT_all <- MP_HD_All %>%
-  group_by(ID, Elevation, Side) %>%
-  summarize(MaxT = max(temperature))
 
-PLOT="Avg Max T - All vs. Elevation"
-ggplot(MaxT_all) + geom_point(aes(x=Elevation, y=MaxT, shape=Side), size=3) + PlotTheme + labs(x="Elevation (m)", y="Avg Max Temp (deg C)")
+PLOT="Avg Daily Max T - All vs. Elevation"
+ggplot(AvgMinMax_all) + geom_point(aes(x=Elevation, y=AvgMax, shape=Side), size=3) + PlotTheme + labs(x="Elevation (m)", y="Avg Daily Max Temp (deg C)")
 
 ggsave(paste(PLOT,".png",sep=""), width = PlotWidth, height = PlotHeight)
