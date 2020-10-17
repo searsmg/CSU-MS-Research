@@ -1,4 +1,5 @@
-#lapse rate analysis for melt season 2020
+#Data wrangling for Blue Maestro sesnors (14 total) for WY20 snowmelt season
+
 
 library(ggplot2)
 library(lubridate)
