@@ -11,12 +11,12 @@ rm(list=ls())
 ## data prep
 
 #read in elev data
-elev <- read.csv("C:/Users/sears/Documents/Repos/CSU-MS-Research/HydroDays_2021/elev_data.csv")
+melt <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/HydroDays21_figs/MeltSum_CumSum.csv")
 
-slope <- read.csv("C:/Users/sears/Documents/Repos/CSU-MS-Research/HydroDays_2021/melt2020_slope.csv")%>%
-  mutate(date.time = mdy(Datetime)) %>% 
-  mutate(time = hms(time))
+melt$datetime = mdy_hm(paste(melt$Datetime, melt$time))
 
+ggplot(melt)+geom_line(aes(x=datetime, y=ObsCumSum_Melt_mm))+
+  geom_line(aes(x=datetime, y=ELRCumSum_Melt_mm))
 
-slope$time0 <- 0
-ggplot(slope)+ geom_raster(aes(x=date.time, y=time, fill=slope))
+ggplot(melt)+geom_point(aes(x=ELRMelt_mm, y=ObsMelt_mm))+
+  geom_abline(intercept = 0, slope = 1)
