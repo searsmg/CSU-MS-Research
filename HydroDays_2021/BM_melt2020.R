@@ -72,9 +72,9 @@ ggplot(melt)+geom_line(aes(x=datetime, y=ObsCumSum_Melt_mm, color="Observed temp
 ggsave(paste(PLOT,".png",sep=""), width = PlotWidth, height = PlotHeight)
 
 PLOT = "1to1"
-ggplot(melt)+geom_point(aes(x=ELRMelt_mm, y=ObsMelt_mm), size=3)+
+ggplot(melt)+geom_point(aes(x=ObsMelt_mm, y=ELRMelt_mm), size=3)+
   geom_abline(intercept = 0, slope = 1, size=1.5, color="red") +
   PlotFormat +
-  labs(y="Melt with observed temp (mm/hr)", x="Melt with ELR (mm/hr)")
+  labs(y="Melt with ELR (mm/hr)", x="Melt with observed temp (mm/hr)")
 
 ggsave(paste(PLOT,".png",sep=""), width = PlotWidth, height = PlotHeight)
