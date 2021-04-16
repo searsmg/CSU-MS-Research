@@ -1,4 +1,6 @@
-
+########################################################################
+#############   DATA WRANGLE PT 1 - BLUE MAESTRO SENSORS   #############    
+########################################################################
 
 library(dplyr)
 library(lubridate)
@@ -14,13 +16,12 @@ temp = list.files(pattern="")
 for (i in 1:length(temp)) assign(temp[i], read.csv(temp[i], 
                                                    skip=2, header=TRUE, stringsAsFactors = FALSE))
 
-addID <- function(dfList){
-  for(i in 1:length(dfList)){
+addID <- function(df){
+  for(i in 1:length(df)){
   df$ID = deparse(substitute(df))
   df$ID = str_remove(df$ID, ".csv")
   }
   return(df)
 }
 
-HD1 <- addID(HD1.csv)
 
