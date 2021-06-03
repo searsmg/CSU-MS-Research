@@ -15,3 +15,5 @@ JW21_sno <- JW21_sno %>%
 PLOT = "JW SNOTEL dens over time"
 ggplot(data = subset(JW21_sno, !is.na(dens)), aes(x=Date, y=dens))+
   geom_line() + scale_x_date(date_breaks = "1 month")
+
+#test
