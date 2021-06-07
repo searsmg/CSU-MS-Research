@@ -28,11 +28,11 @@ JW_yravg <- JWall_sno %>%
   group_by(waterYear) %>%
   summarize(max_accumprecip = max(Precipitation.Accumulation..in..Start.of.Day.Values),
             maxSWE = max(Snow.Water.Equivalent..in..Start.of.Day.Values)) %>% 
-  mutate(max_accumeprecip = max_accumprecip*2.54,
-         maxSWE=maxSWE*2.54)
+  mutate(max_accumeprecip_mm = max_accumprecip*25.4,
+         maxSWE_mm=maxSWE*25.4)
 
-mean(JW_yravg$maxSWE, na.rm=TRUE)
-mean(JW_yravg$max_accumprecip, na.rm=TRUE)
+mean(JW_yravg$maxSWE_mm, na.rm=TRUE)
+mean(JW_yravg$max_accumeprecip_mm, na.rm=TRUE)
 
 JW_peakSWEdate <- JWall_sno %>%
   group_by(waterYear) %>%
