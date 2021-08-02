@@ -11,7 +11,7 @@ rm(list = ls())
 ############DATA PREP#############
 
 #set working directory and csv file
-setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/BM Sensors/Field_Data_20210410/Processed/") #update wd
+setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/BM Sensors/Field_Data_20210716/Processed/") #update wd
               
 #######read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
 HD1 <- read.csv(file = "HD1.csv", skip=2, header=TRUE, stringsAsFactors = FALSE) 
@@ -185,16 +185,16 @@ MP8$ID <- "MP8"
 
 ########read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
 MP9 <- read.csv(file = "MP9.csv", skip=2, header=TRUE, stringsAsFactors = FALSE) 
-#HD4 <-HD4[-c(6:12)]
+#MP9 <-MP9[-c(6:12)]
+#remove empty rows
+MP9<-na.omit(MP9)
 
-#remove NA rows
-#HD2<-na.omit(HD2)
 
 MP9$Elevation <- 3453.61
 MP9$ID <- "MP9"
 
 
-MP_HD_All_Apr21 <- rbind(HD1, HD2, HD3, HD4, HD5, HD6, HD7, HD8, HD9, MP1, MP2, MP3, MP4, MP5, MP6, MP7, MP8, MP9)
+MP_HD_All_Jul21 <- rbind(HD1, HD2, HD3, HD4, HD5, HD6, HD7, HD8, HD9, MP1, MP2, MP3, MP4, MP5, MP6, MP7, MP8, MP9)
 
 
 ############PLOTS##########################
@@ -217,7 +217,7 @@ PlotTheme = theme(axis.text=element_text(size=20),    #Text size for axis tick m
 
 #########################################################################
 PLOT = "Lapse Rates - All"
-ggplot(MP_HD_All_Apr21) + geom_point(aes(x=Elevation, y=temperature))
+ggplot(MP_HD_All_Jul21) + geom_point(aes(x=Elevation, y=temperature))
 
-write.csv(MP_HD_All_Apr21, "MP_HD_All_Apr21.csv")
+write.csv(MP_HD_All_Jul21, "MP_HD_All_Jul21.csv")
 
