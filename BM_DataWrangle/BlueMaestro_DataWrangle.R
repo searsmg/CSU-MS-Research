@@ -20,7 +20,7 @@ HD1 <- read.csv(file = "HD1.csv", skip=2, header=TRUE, stringsAsFactors = FALSE)
 #remove NA rows
 #HD1<-na.omit(HD1)
 
-HD1$Elevation <- 3059.53
+HD1$Elevation <- 3059.04
 HD1$ID <- "HD1"
 
 #######read csv, skip top 2 rows, use row 5 as header, remove columns 6:12
@@ -40,7 +40,7 @@ HD3 <- read.csv(file = "HD3.csv", skip=2, header=TRUE, stringsAsFactors = FALSE)
 #remove NA rows
 #HD2<-na.omit(HD2)
 
-HD3$Elevation <- 3155.57
+HD3$Elevation <- 3158.3
 HD3$ID <- "HD3"
 
 ########read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
@@ -70,7 +70,7 @@ HD6 <- read.csv(file = "HD6.csv", skip=2, header=TRUE, stringsAsFactors = FALSE)
 #remove NA rows
 #HD2<-na.omit(HD2)
 
-HD6$Elevation <- 3314.65
+HD6$Elevation <- 3312.44
 HD6$ID <- "HD6"
 
 ########read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
@@ -80,8 +80,28 @@ HD7 <- read.csv(file = "HD7.csv", skip=2, header=TRUE, stringsAsFactors = FALSE)
 #remove NA rows
 #HD2<-na.omit(HD2)
 
-HD7$Elevation <- 3365.57
+HD7$Elevation <- 3370.84
 HD7$ID <- "HD7"
+
+########read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
+HD8 <- read.csv(file = "HD8.csv", skip=2, header=TRUE, stringsAsFactors = FALSE) 
+#HD4 <-HD4[-c(6:12)]
+
+#remove NA rows
+#HD2<-na.omit(HD2)
+
+HD8$Elevation <- 3410.95
+HD8$ID <- "HD8"
+
+########read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
+HD9 <- read.csv(file = "HD9.csv", skip=2, header=TRUE, stringsAsFactors = FALSE) 
+#HD4 <-HD4[-c(6:12)]
+
+#remove NA rows
+#HD2<-na.omit(HD2)
+
+HD9$Elevation <- 3450.43
+HD9$ID <- "HD9"
 
 ########read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
 MP1 <- read.csv(file = "MP1.csv", skip=2, header=TRUE, stringsAsFactors = FALSE) 
@@ -90,7 +110,7 @@ MP1 <- read.csv(file = "MP1.csv", skip=2, header=TRUE, stringsAsFactors = FALSE)
 #remove NA rows
 #HD2<-na.omit(HD2)
 
-MP1$Elevation <- 3048.67
+MP1$Elevation <- 3051.77
 MP1$ID <- "MP1"
 
 ########read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
@@ -140,7 +160,7 @@ MP6 <- read.csv(file = "MP6.csv", skip=2, header=TRUE, stringsAsFactors = FALSE)
 #remove NA rows
 #HD2<-na.omit(HD2)
 
-MP6$Elevation <- 3302.62
+MP6$Elevation <- 3303.05
 MP6$ID <- "MP6"
 
 ########read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
@@ -153,7 +173,28 @@ MP7 <- read.csv(file = "MP7.csv", skip=2, header=TRUE, stringsAsFactors = FALSE)
 MP7$Elevation <- 3358.03
 MP7$ID <- "MP7"
 
-MP_HD_All_Apr21 <- rbind(HD1, HD2, HD3, HD4, HD5, HD6, HD7, MP1, MP2, MP3, MP4, MP5, MP6, MP7)
+########read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
+MP8 <- read.csv(file = "MP8.csv", skip=2, header=TRUE, stringsAsFactors = FALSE) 
+#HD4 <-HD4[-c(6:12)]
+
+#remove NA rows
+#HD2<-na.omit(HD2)
+
+MP8$Elevation <- 3407.92
+MP8$ID <- "MP8"
+
+########read csv, skip top 4 rows, use row 5 as header, remove columns 6:12
+MP9 <- read.csv(file = "MP9.csv", skip=2, header=TRUE, stringsAsFactors = FALSE) 
+#HD4 <-HD4[-c(6:12)]
+
+#remove NA rows
+#HD2<-na.omit(HD2)
+
+MP9$Elevation <- 3453.61
+MP9$ID <- "MP9"
+
+
+MP_HD_All_Apr21 <- rbind(HD1, HD2, HD3, HD4, HD5, HD6, HD7, HD8, HD9, MP1, MP2, MP3, MP4, MP5, MP6, MP7, MP8, MP9)
 
 
 ############PLOTS##########################
