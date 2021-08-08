@@ -7,8 +7,10 @@ library(ggplot2)
 library(dataRetrieval)
 
 #download Joe Wright SNOTEL data from WY 2010 to present and add as a df. Also, get date into correct format.
-JW21_sno <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "daily", DayBgn = '2020-10-01', DayEnd = '2021-06-03') %>%
-  mutate(Date = ymd(Date))
+JW21 <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
+  mutate(Date = ymd_hm(Date))
+
+write.csv(JW21, "JW21.csv")
 
 JW21_sno <- JW21_sno %>%
   mutate(dens = (Snow.Water.Equivalent..in..Start.of.Day.Values/Snow.Depth..in..Start.of.Day.Values)*100)
