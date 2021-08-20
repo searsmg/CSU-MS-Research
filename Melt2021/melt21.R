@@ -39,6 +39,6 @@ rad21 <- rad21 %>%
   filter(minute(Datetime) == 0) %>%
   filter(row_number() %% 2 != 1) ## Delete odd-rows
 
-
+#break bands to own df
   
 
