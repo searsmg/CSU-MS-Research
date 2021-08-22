@@ -11,6 +11,9 @@ rm(list = ls())
 #set working directory and csv file
 setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/For R")
 
+##########################################################################
+#### PROCESSING ####
+
 #temp, elevation, and elevation band data
 temp_elev_21 <- read.csv(file="Melt21_elev_noOUT.csv", header=TRUE) %>%
   mutate(Datetime = mdy_hm(Datetime))
@@ -88,4 +91,8 @@ b13 <- bandT_rad %>%
 b14 <- bandT_rad %>%
   select(Datetime, B14, Swin, Swout, Lwin, Lwout)
 
+#### PROCESSING DONE ####
+##########################################################################
 
+## DON'T NEED TO RUN ANY OF THE ABOVE LINES AS LONG AS RDATA FILE IS READ IN
+load("C:/Users/sears/Documents/Repos/CSU-MS-Research/Melt2021/DFs.Rdata")
