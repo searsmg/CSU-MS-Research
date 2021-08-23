@@ -45,3 +45,29 @@ JW_peakSWEdate$moday <- format(JW_peakSWEdate$Date,"%j")
 JW_peakSWEdate$moday <- as.numeric(JW_peakSWEdate$moday)
 
 mean(JW_peakSWEdate$moday)
+
+JWall_sno <- JWall_sno %>%
+  rename(#SWE_in = Snow.Water.Equivalent..in..Start.of.Day.Values,
+         #Sd_in =Snow.Depth..in..Start.of.Day.Values,
+         AirT_F = Air.Temperature.Average..degF.)
+
+meltout <- JWall_sno %>%
+  mutate(month = month(Date)) %>%
+  filter(between(month, 4,7)) %>%
+  group_by(waterYear) %>%
+  filter(SWE_in == min(SWE_in)) %>%
+  slice(1) %>%
+  ungroup()
+
+meltout$moday <- format(meltout$Date,"%j")
+meltout$moday <- as.numeric(meltout$moday)
+
+mean(meltout$moday)
+
+Ta_melt <- JWall_sno %>%
+  mutate(month = month(Date)) %>%
+  filter(between(month, 4,7)) %>%
+  group_by(waterYear) %>%
+  summarize(avgtemp = mean(AirT_F))
+
+mean(Ta_melt$avgtemp, na.rm=TRUE)
