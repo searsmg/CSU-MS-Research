@@ -49,7 +49,7 @@ rad21 <- rad21 %>%
 bandT_rad <- merge(bandT, rad21, by = "Datetime")
 
 #now break each band out so we can calculate rad and melt
-b1 <- bandT_rad %>%
+b1_2 <- bandT_rad %>%
   select(Datetime, B1, Swin, Swout, Lwin, Lwout)
 
 b2 <- bandT_rad %>%
@@ -76,23 +76,14 @@ b8 <- bandT_rad %>%
 b9 <- bandT_rad %>%
   select(Datetime, B9, Swin, Swout, Lwin, Lwout)
 
-b10 <- bandT_rad %>%
+b10_14 <- bandT_rad %>%
   select(Datetime, B10, Swin, Swout, Lwin, Lwout)
 
-b11 <- bandT_rad %>%
-  select(Datetime, B11, Swin, Swout, Lwin, Lwout)
-
-b12 <- bandT_rad %>%
-  select(Datetime, B12, Swin, Swout, Lwin, Lwout)
-
-b13 <- bandT_rad %>%
-  select(Datetime, B13, Swin, Swout, Lwin, Lwout)
-
-b14 <- bandT_rad %>%
-  select(Datetime, B14, Swin, Swout, Lwin, Lwout)
 
 #### PROCESSING DONE ####
 ##########################################################################
 
 ## DON'T NEED TO RUN ANY OF THE ABOVE LINES AS LONG AS RDATA FILE IS READ IN
 load("C:/Users/sears/Documents/Repos/CSU-MS-Research/Melt2021/DFs.Rdata")
+
+#for each band compute LWin
