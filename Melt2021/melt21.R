@@ -18,16 +18,30 @@ setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Tem
 temp_elev_21 <- read.csv(file="Melt21_elev_noOUT.csv", header=TRUE) %>%
   mutate(Datetime = mdy_hm(Datetime))
 
+RH_dewpt <- read.csv(file="RH_dewpt_all.csv", header=TRUE) %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+all21 <- merge(temp_elev_21, RH_dewpt, by=c("Datetime", "ID"))
+
 #get a temp for each elev band (grouping bands and getting avg temp)
-#bandtemps <- temp_elev_21 %>%
-#  group_by(Datetime, Band) %>%
-#  summarize(bandT = mean(AirT_C, na.rm=TRUE))
+bands21 <- all21 %>%
+  group_by(Datetime, Band) %>%
+  summarize(bandT = mean(AirT_C, na.rm=TRUE),
+            bandRH = mean(humidity),
+            banddewpt = mean(dewpoint))
 
-#bandT_long <- bandtemps %>%
-#  pivot_wider(names_from = Band, values_from = bandT)
+bandT_long <- bands21 %>%
+  pivot_wider(names_from = Band, values_from = bandT)
 
-#write.csv(bandT_long, "bandT.csv")
+write.csv(bandT_long, "bandT.csv")
 
+bandRH_long <- bands21 %>%
+  select(Datetime, bandRH,Band) %>%
+  pivot_wider(names_from = Band, values_from=bandRH)
+
+write.csv(bandRH_long, "bandRH.csv")
+
+###################################################
 #bring band T back in - have all Ta for melt 21
 bandT <- read.csv(file="bands21_9.csv", header=TRUE) %>%
   mutate(Datetime = mdy_hm(Datetime))
@@ -87,8 +101,8 @@ load("C:/Users/sears/Documents/Repos/CSU-MS-Research/Melt2021/DFs.Rdata")
 # first find sat vapor press (ea), then back out Cc. fix Cc for >1 or <1,
 #
 b1_2 <- b1_2 %>%
-  mutate(VP = 6.112*exp(17.62*b1_2/(243.12+b1_2))) %>%
-  mutate(Cc = (((Lwin/(5.67*10^-8)*b1_2^4)/(0.53+0.065*VP))-1)/0.4) %>%
+  mutate(VP = 6.112*exp((17.62*b1_2)/(243.12+b1_2))) %>%
+  mutate(Cc = (((Lwin/((5.67*10^-8)*b1_2^4))/(0.53+0.065*VP))-1)/0.4) %>%
   mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
   mutate(Lwin_fix = (0.53+(0.065*VP))*(1+(0.4*Cc_fix))*(5.67*10^-8)*(b1_2^4))
 
