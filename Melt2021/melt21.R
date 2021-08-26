@@ -83,7 +83,13 @@ b10_14 <- bandT_rad %>%
 ## DON'T NEED TO RUN ANY OF THE ABOVE LINES AS LONG AS RDATA FILE IS READ IN
 load("C:/Users/sears/Documents/Repos/CSU-MS-Research/Melt2021/DFs.Rdata")
 
-#for each band compute LWin
-
+## for each band compute LWin
+# first find sat vapor press (ea), then back out Cc. fix Cc for >1 or <1,
+#
+b1_2 <- b1_2 %>%
+  mutate(VP = 6.112*exp(17.62*b1_2/(243.12+b1_2))) %>%
+  mutate(Cc = (((Lwin/(5.67*10^-8)*b1_2^4)/(0.53+0.065*VP))-1)/0.4) %>%
+  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
+  mutate(Lwin_fix = (0.53+(0.065*VP))*(1+(0.4*Cc_fix))*(5.67*10^-8)*(b1_2^4))
 
 
