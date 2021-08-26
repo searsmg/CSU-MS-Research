@@ -29,7 +29,7 @@ temp_elev_21 <- read.csv(file="Melt21_elev_noOUT.csv", header=TRUE) %>%
 #write.csv(bandT_long, "bandT.csv")
 
 #bring band T back in - have all Ta for melt 21
-bandT <- read.csv(file="bands21_interpol.csv", header=TRUE) %>%
+bandT <- read.csv(file="bands21_9.csv", header=TRUE) %>%
   mutate(Datetime = mdy_hm(Datetime))
 
 #get rid of the minute on date time (e.g., 14:01 - want 14:00)
@@ -50,34 +50,31 @@ bandT_rad <- merge(bandT, rad21, by = "Datetime")
 
 #now break each band out so we can calculate rad and melt
 b1_2 <- bandT_rad %>%
-  select(Datetime, B1, Swin, Swout, Lwin, Lwout)
-
-b2 <- bandT_rad %>%
-  select(Datetime, B2, Swin, Swout, Lwin, Lwout)
+  select(Datetime, b1_2, Swin, Swout, Lwin, Lwout)
 
 b3 <- bandT_rad %>%
-  select(Datetime, B3, Swin, Swout, Lwin, Lwout)
+  select(Datetime, b3, Swin, Swout, Lwin, Lwout)
 
 b4 <- bandT_rad %>%
-  select(Datetime, B4, Swin, Swout, Lwin, Lwout)
+  select(Datetime, b4, Swin, Swout, Lwin, Lwout)
 
 b5 <- bandT_rad %>%
-  select(Datetime, B5, Swin, Swout, Lwin, Lwout)
+  select(Datetime, b5, Swin, Swout, Lwin, Lwout)
 
 b6 <- bandT_rad %>%
-  select(Datetime, B6, Swin, Swout, Lwin, Lwout)
+  select(Datetime, b6, Swin, Swout, Lwin, Lwout)
 
 b7 <- bandT_rad %>%
-  select(Datetime, B7, Swin, Swout, Lwin, Lwout)
+  select(Datetime, b7, Swin, Swout, Lwin, Lwout)
 
 b8 <- bandT_rad %>%
-  select(Datetime, B8, Swin, Swout, Lwin, Lwout)
+  select(Datetime, b8, Swin, Swout, Lwin, Lwout)
 
 b9 <- bandT_rad %>%
-  select(Datetime, B9, Swin, Swout, Lwin, Lwout)
+  select(Datetime, b9, Swin, Swout, Lwin, Lwout)
 
 b10_14 <- bandT_rad %>%
-  select(Datetime, B10, Swin, Swout, Lwin, Lwout)
+  select(Datetime, b10_14, Swin, Swout, Lwin, Lwout)
 
 
 #### PROCESSING DONE ####
@@ -87,3 +84,6 @@ b10_14 <- bandT_rad %>%
 load("C:/Users/sears/Documents/Repos/CSU-MS-Research/Melt2021/DFs.Rdata")
 
 #for each band compute LWin
+
+
+
