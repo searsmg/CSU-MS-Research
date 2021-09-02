@@ -5,6 +5,7 @@ library(lubridate)
 library(dplyr)
 library(plotly)
 library(optimr)
+library(RNRCS)
 
 rm(list = ls()) 
 
@@ -12,7 +13,7 @@ rm(list = ls())
 setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL")
 
 ######################################################
-#first find MFs using SNOTEL data (practice)
+#first find MFs using SNOTEL data (practice) - THIS IS HOURLY
 
 sno21 <- read.csv("JW21.csv", header=TRUE) %>%
   mutate(Date = mdy_hm(Date))
@@ -43,6 +44,38 @@ sno21 <- sno21 %>%
   mutate(NR = (Swin-Swout)+(Lwin-Lwout))
 
 ######################################################
+#pull in daily SNOTEL data -- THIS IS DAILY
+JW21_daily <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "daily", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
+  mutate(Date = ymd(Date))
+
+JW21_daily <- JW21_daily %>%
+  rename(Ta_F = Air.Temperature.Average..degF., 
+         precip_accum_in = Precipitation.Accumulation..in..Start.of.Day.Values,
+         Sd_in = Snow.Depth..in..Start.of.Day.Values,
+         SWE_in = Snow.Water.Equivalent..in..Start.of.Day.Values) %>%
+  select(-c(Air.Temperature.Maximum..degF., Air.Temperature.Minimum..degF.,
+            Air.Temperature.Observed..degF..Start.of.Day.Values)) %>%
+  mutate(Ta_C = (Ta_F-32)*(5/9),
+         PrecipAcum_mm = precip_accum_in*25.4,
+         Sd_mm = Sd_in*25.4,
+         SWE_mm = SWE_in*25.4) %>%
+  select(-c(Ta_F, precip_accum_in, Sd_in, SWE_in))
+  
+
+#pull in hourly rad data to join w/ daily SNOTEL
+rad_daily <- sno21 %>%
+  select(Date, NR) %>%
+  group_by(Date = format(Date, "%Y-%m-%d")) %>%
+  summarize(avgNR = mean(NR)) %>%
+  mutate(Date = ymd(Date))
+  
+
+JW21_daily <- merge(JW21_daily, rad_daily, by="Date")
+
+######################################################
+#find observed melt
+
+######################################################
 #optimize 
 
 melt <- function(data, par){
@@ -61,7 +94,6 @@ compare <- ggplot(sno21)+geom_line(aes(x=Date, y=melt_mod))+geom_point(aes(x=Dat
 ggplotly(compare)
 
 ######################################################
-######################################################
-#Find MFs using snow pit from melt observed
+
 
 
