@@ -21,6 +21,22 @@ T20 <- read.csv(file = "C:/Users/sears/Documents/Research/Snow_Hydro_Research/Th
 T21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/For R/2021/Melt21_elev_noOUT.csv",
                 header=TRUE) %>%
   mutate(Datetime = mdy_hm(Datetime))
+################################################
+PlotFormat = theme(axis.text=element_text(size=20),
+                   axis.title.x=element_text(size=24, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),              
+                   axis.title.y=element_text(size=24, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20)),              
+                   plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
+                   legend.title=element_blank(),                                                                    
+                   legend.text=element_text(size=20),                                                                   
+                   legend.position = "bottom", 
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   axis.line = element_line(colour = "black"),
+                   strip.text = element_text(size=25))
+
+
+######################################################################
 
 #remvoe the 01 from the minutes
 minute(T20$Datetime) <- 0
@@ -40,13 +56,13 @@ T20_long <- T20 %>%
   select(Datetime, ID, AirT_C) %>%
   pivot_wider(names_from = ID, values_from=AirT_C)
 
-#write.csv(T20_long, "T20.csv")
+write.csv(T20_long, "T20.csv")
 
 T21_long <- T21 %>%
   select(Datetime, ID, AirT_C) %>%
   pivot_wider(names_from = ID, values_from=AirT_C)
 
-#write.csv(T21_long, "T21.csv")
+write.csv(T21_long, "T21.csv")
 
 ####
 T20_slope <- read.csv(file = "C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/T20_nstge.csv",
