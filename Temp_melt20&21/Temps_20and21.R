@@ -92,7 +92,7 @@ ggplot(slope, aes(x=Datetime, y=Slope_degCkm)) +
   ylim(-30,30) +
   labs(x= "Date", y="NSTGE (deg C/km)") +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
-  facet_wrap(~year, scales="free_x")
+  facet_wrap(~year, scales="free_x") + PlotFormat
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -121,3 +121,78 @@ r2 <- ggplot(slope_edit, aes(x=doy, y=hour, fill=R2)) +
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 grid.arrange(slope, r2, nrow=2)
+
+###################################
+#find average slope and average R2 by day 
+
+daily_stat <- slope %>%
+  summarize(slope_avg = mean(Slope_degCkm),
+            slope_sd = sd(Slope_degCkm),
+            R2_avg = mean(R2),
+            R2_sd = sd(R2))
+
+#find avg slope and R2 by time of day. split between sun hours and non sun hours
+am_stat <- slope %>%
+  mutate(hour = hour(Datetime)) %>%
+  filter(hour %in% (8:18)) %>%
+  summarize(slope_avg = mean(Slope_degCkm),
+             slope_sd = sd(Slope_degCkm),
+             R2_avg = mean(R2),
+             R2_sd = sd(R2))
+
+pm_stat <- slope %>%
+  mutate(hour = hour(Datetime)) %>%
+  filter(!hour %in% (8:18)) %>%
+  summarize(slope_avg = mean(Slope_degCkm),
+            slope_sd = sd(Slope_degCkm),
+            R2_avg = mean(R2),
+            R2_sd = sd(R2))
+
+####now do all of the above but split by year
+#2020 first
+daily20_stat <- T20_slope %>%
+  summarize(slope_avg = mean(Slope_degCkm),
+            slope_sd = sd(Slope_degCkm),
+            R2_avg = mean(R2),
+            R2_sd = sd(R2))
+
+#find avg slope and R2 by time of day. split between sun hours and non sun hours
+am20_stat <- T20_slope %>%
+  mutate(hour = hour(Datetime)) %>%
+  filter(hour %in% (8:18)) %>%
+  summarize(slope_avg = mean(Slope_degCkm),
+            slope_sd = sd(Slope_degCkm),
+            R2_avg = mean(R2),
+            R2_sd = sd(R2))
+
+pm20_stat <- T20_slope %>%
+  mutate(hour = hour(Datetime)) %>%
+  filter(!hour %in% (8:18)) %>%
+  summarize(slope_avg = mean(Slope_degCkm),
+            slope_sd = sd(Slope_degCkm),
+            R2_avg = mean(R2),
+            R2_sd = sd(R2))
+
+#2021 next
+daily21_stat <- T21_slope %>%
+  summarize(slope_avg = mean(Slope_degCkm),
+            slope_sd = sd(Slope_degCkm),
+            R2_avg = mean(R2),
+            R2_sd = sd(R2))
+
+#find avg slope and R2 by time of day. split between sun hours and non sun hours
+am21_stat <- T21_slope %>%
+  mutate(hour = hour(Datetime)) %>%
+  filter(hour %in% (8:18)) %>%
+  summarize(slope_avg = mean(Slope_degCkm),
+            slope_sd = sd(Slope_degCkm),
+            R2_avg = mean(R2),
+            R2_sd = sd(R2))
+
+pm21_stat <- T21_slope %>%
+  mutate(hour = hour(Datetime)) %>%
+  filter(!hour %in% (8:18)) %>%
+  summarize(slope_avg = mean(Slope_degCkm),
+            slope_sd = sd(Slope_degCkm),
+            R2_avg = mean(R2),
+            R2_sd = sd(R2))
