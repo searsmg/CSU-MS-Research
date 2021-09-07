@@ -75,25 +75,41 @@ JW21_daily <- merge(JW21_daily, rad_daily, by="Date")
 ######################################################
 #find observed melt
 
+JW21_daily_test <- JW21_daily %>%
+  mutate(precip_mmday = PrecipAcum_mm - lag(PrecipAcum_mm)) %>%
+  mutate(melt_mmday = ifelse(precip_mmday > 0,ifelse(lag(Sd_mm)>Sd_mm, (lag(SWE_mm)-SWE_mm)-precip_mmday,
+                                                 precip_mmday-(SWE_mm-lag(SWE_mm))),
+                              lag(SWE_mm)-SWE_mm)) %>%
+  mutate(melt_obs = ifelse(melt_mmday < 0, 0, melt_mmday))
+
+JW21_daily_test[is.na(JW21_daily_test)] <- 0
+
 ######################################################
 #optimize 
 
-melt <- function(data, par){
-  with(data, sum(((par[1]*(Ta_C-0)+par[2]*NR)-d_SWE)^2))
+melt_op <- function(data, par){
+  with(data, sum(((par[1]*(Ta_C-0)+par[2]*avgNR)-melt_obs)^2))
 }
 
-MFs <- optim(par=c(0,0), fn=melt, data=sno21)
+MFs <- optim(par=c(1,1), fn=melt_op, data=JW21_daily_test)
  
 ######################################################
 #see how SNOTEL looks with new MFs
-sno21 <- sno21 %>%
-  mutate(melt_mod = 0.0277317240*(Ta_C-0)+-0.0009764329*(NR))
+JW21_daily_test <- JW21_daily_test %>%
+  mutate(melt_mod = 0.2731*(Ta_C-0)+-0.0581*(avgNR)) %>%
+  mutate(melt_mod_cum = cumsum(melt_mod),
+         melt_obs_cum = cumsum(melt_obs))
 
-compare <- ggplot(sno21)+geom_line(aes(x=Date, y=melt_mod))+geom_point(aes(x=Date, y=d_SWE))
+compare <- ggplot(JW21_daily_test)+geom_line(aes(x=Date, y=melt_mod_cum))+geom_point(aes(x=Date, y=melt_obs_cum))
 
 ggplotly(compare)
+
+ggplot(JW21_daily_test)+geom_point(aes(x=melt_obs_cum, y=melt_mod_cum))+
+  geom_abline(intercept = 0, slope = 1, size=1.5, color="red")
 
 ######################################################
 
 
+library(hydroGOF)
 
+NSE(JW21_daily_test$melt_mod_cum, JW21_daily_test$melt_obs_cum)
