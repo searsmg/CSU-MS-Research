@@ -6,6 +6,7 @@ library(dplyr)
 library(plotly)
 library(optimr)
 library(RNRCS)
+library(hydroGOF)
 
 rm(list = ls()) 
 
@@ -84,6 +85,9 @@ JW21_daily_test <- JW21_daily %>%
 
 JW21_daily_test[is.na(JW21_daily_test)] <- 0
 
+JW21_daily_test <- JW21_daily_test %>%
+  filter(Date <= "2021-06-11")
+
 ######################################################
 #optimize 
 
@@ -91,13 +95,13 @@ melt_op <- function(data, par){
   with(data, sum(((par[1]*(Ta_C-0)+par[2]*avgNR)-melt_obs)^2))
 }
 
-MFs <- optim(par=c(1,1), fn=melt_op, data=JW21_daily_test)
+MFs <- optim(par=c(1,0.01), fn=melt_op, data=JW21_daily_test)
  
 ######################################################
 #see how SNOTEL looks with new MFs
 JW21_daily_test <- JW21_daily_test %>%
-  mutate(melt_mod = 0.2731*(Ta_C-0)+-0.0581*(avgNR)) %>%
-  mutate(melt_mod_cum = cumsum(melt_mod),
+  mutate(melt_mod = pmax(1.171*(Ta_C-0)+(-0.0497)*(avgNR),0)) %>%
+  mutate(melt_mod_cum = cumsum(melt_mod_fix),
          melt_obs_cum = cumsum(melt_obs))
 
 compare <- ggplot(JW21_daily_test)+geom_line(aes(x=Date, y=melt_mod_cum))+geom_point(aes(x=Date, y=melt_obs_cum))
@@ -107,9 +111,8 @@ ggplotly(compare)
 ggplot(JW21_daily_test)+geom_point(aes(x=melt_obs_cum, y=melt_mod_cum))+
   geom_abline(intercept = 0, slope = 1, size=1.5, color="red")
 
+NSE(JW21_daily_test$melt_mod_cum, JW21_daily_test$melt_obs_cum)
+
 ######################################################
 
 
-library(hydroGOF)
-
-NSE(JW21_daily_test$melt_mod_cum, JW21_daily_test$melt_obs_cum)
