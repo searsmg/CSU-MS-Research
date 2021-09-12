@@ -217,3 +217,81 @@ pm21_stat <- T21_slope %>%
             slope_sd = sd(Slope_degCkm),
             R2_avg = mean(R2),
             R2_sd = sd(R2))
+
+################################################################
+#analyze between HD and MP sides for slope and R2
+
+slope20_hd <- read.csv(file = "T20_hd.csv") %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+slope20_m <- read.csv(file = "T20_m.csv") %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+slope21_hd <- read.csv(file = "T21_hd.csv") %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+slope21_m <- read.csv(file = "T21_m.csv") %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+slope20_hd <- slope20_hd %>%
+  select(Datetime, Slope_km, R2) %>%
+  mutate(year = "2020") %>%
+  mutate(side ="hd")
+
+slope20_m <- slope20_m %>%
+  select(Datetime, Slope_km, R2) %>%
+  mutate(year = "2020") %>%
+  mutate(side ="m")
+
+slope_20side <- rbind(slope20_hd, slope20_m)
+
+PLOT = "NSTGE_byside_20"
+ggplot(slope_20side, aes(x=Datetime, y=Slope_km)) +
+  geom_point(aes(colour=R2)) + 
+  geom_hline(yintercept=-6.5, size=1, color="Red") +
+  ylim(-30,30) +
+  labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
+  scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  facet_wrap(~side, scales="free_x", labeller=labeller(side = c("hd" = "Hot Dog", "m" = "Montgomery"))) + PlotFormat +
+  scale_color_gradient(low='grey', high='black')
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+
+slope21_hd <- slope21_hd %>%
+  select(Datetime, Slope_km, R2) %>%
+  mutate(year = "2021") %>%
+  mutate(side ="hd")
+
+slope21_m <- slope21_m %>%
+  select(Datetime, Slope_km, R2) %>%
+  mutate(year = "2021") %>%
+  mutate(side ="m")
+
+slope_21side <- rbind(slope21_hd, slope21_m)
+
+PLOT = "NSTGE_byside_21"
+ggplot(slope_21side, aes(x=Datetime, y=Slope_km)) +
+  geom_point(aes(colour=R2)) + 
+  ylim(-31,31) +
+  geom_hline(yintercept=-6.5, size=1, color="Red") +
+  labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
+  scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  facet_wrap(~side, scales="free_x", labeller=labeller(side = c("hd" = "Hot Dog", "m" = "Montgomery"))) + PlotFormat +
+  scale_color_gradient(low='grey', high='black')
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+slope_side <- rbind(slope_21side, slope_20side)
+
+PLOT = "NSTGE_byside"
+ggplot(slope_side, aes(x=Datetime, y=Slope_km)) +
+  geom_point(aes(colour=R2)) + 
+  ylim(-31,31) +
+  geom_hline(yintercept=-6.5, size=1, color="Red") +
+  labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
+  scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  facet_grid(side ~ year, scales="free_x", labeller=labeller(side = c("hd" = "Hot Dog", "m" = "Montgomery"))) +
+  scale_color_gradient(low='grey', high='black') + PlotFormat
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
