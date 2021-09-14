@@ -22,12 +22,12 @@ T21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thes
                 header=TRUE) %>%
   mutate(Datetime = mdy_hm(Datetime))
 ################################################
-PlotFormat = theme(axis.text=element_text(size=16),
-                   axis.title.x=element_text(size=18, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),              
-                   axis.title.y=element_text(size=18, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20)),              
+PlotFormat = theme(axis.text=element_text(size=16, color="black"),
+                   axis.title.x=element_text(size=18, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+                   axis.title.y=element_text(size=18, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
                    plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
-                   legend.title=element_text(size=16),                                                                    
-                   legend.text=element_text(size=16),                                                                   
+                   legend.title=element_text(size=16, color="black"),                                                                    
+                   legend.text=element_text(size=16, color="black"),                                                                   
                    legend.position = "right", 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -52,17 +52,17 @@ grid.arrange(t20,t21, ncol=2)
 
 ##########################
 
-T20_long <- T20 %>%
-  select(Datetime, ID, AirT_C) %>%
-  pivot_wider(names_from = ID, values_from=AirT_C)
+#T20_long <- T20 %>%
+#  select(Datetime, ID, AirT_C) %>%
+#  pivot_wider(names_from = ID, values_from=AirT_C)
 
-write.csv(T20_long, "T20.csv")
+#write.csv(T20_long, "T20.csv")
 
-T21_long <- T21 %>%
-  select(Datetime, ID, AirT_C) %>%
-  pivot_wider(names_from = ID, values_from=AirT_C)
+#T21_long <- T21 %>%
+#  select(Datetime, ID, AirT_C) %>%
+#  pivot_wider(names_from = ID, values_from=AirT_C)
 
-write.csv(T21_long, "T21.csv")
+#write.csv(T21_long, "T21.csv")
 
 ####
 T20_slope <- read.csv(file = "C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/T20_nstge.csv",
@@ -104,12 +104,14 @@ slope <- rbind(T20_slope, T21_slope)
 PLOT = "NSTGE_20&21"
 ggplot(slope, aes(x=Datetime, y=Slope_degCkm)) +
   geom_point(aes(colour=R2)) + 
-  geom_hline(yintercept=-6.5, size=1, color="Red") +
+  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1) +
   ylim(-20,30) +
   labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
   facet_wrap(~year, scales="free_x") + PlotFormat +
-  scale_color_gradient(low='grey', high='black')
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) 
+
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -125,7 +127,7 @@ PLOT="heatmap_slope"
 slope <- ggplot(slope_edit, aes(x=doy, y=hour, fill=Slope_degCkm)) +
   geom_tile() + facet_grid(~year, scale="free_x") +
   scale_fill_distiller(palette = 'RdYlBu')+
-  labs(fill=expression(degree*C/km), x="Day of Year", y="Hour") + PlotFormat +
+  labs(fill=expression(degree*C/km), x="Day of year", y="Hour") + PlotFormat +
   scale_y_continuous(breaks=seq(0, 23, 4))
 slope
   
@@ -287,11 +289,15 @@ slope_side <- rbind(slope_21side, slope_20side)
 PLOT = "NSTGE_byside"
 ggplot(slope_side, aes(x=Datetime, y=Slope_km)) +
   geom_point(aes(colour=R2)) + 
+  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1) +
   ylim(-31,31) +
-  geom_hline(yintercept=-6.5, size=1, color="Red") +
+  #geom_hline(yintercept=-6.5, size=1, color="Red") +
   labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
   facet_grid(side ~ year, scales="free_x", labeller=labeller(side = c("hd" = "Hot Dog", "m" = "Montgomery"))) +
-  scale_color_gradient(low='grey', high='black') + PlotFormat
+  scale_color_gradient(low='grey', high='black') + 
+  PlotFormat +
+  scale_linetype_manual(name ="", values = c('solid'), guide=guide_legend(reverse=FALSE)) +
+  geom_hline(aes(yintercept=-0))
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
