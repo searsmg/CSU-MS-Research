@@ -115,4 +115,7 @@ NSE(JW21_daily_test$melt_mod_cum, JW21_daily_test$melt_obs_cum)
 
 ######################################################
 
-
+#old
+melt_op <- function(data, par){
+  with(data, sum((((ifelse((par[1]*(Ta_C-0)+par[2]*avgNR)<0,0,(par[1]*(Ta_C-0)+par[2]*avgNR)))-melt_obs)^2)))
+}
