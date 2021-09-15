@@ -9,6 +9,7 @@ library(plotly)
 library(gridExtra)
 library(scales)
 library(RColorBrewer)
+library(ggpubr)
 
 rm(list = ls()) 
 
@@ -25,7 +26,7 @@ T21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thes
   mutate(Datetime = mdy_hm(Datetime))
 
 ######################################################################
-#2020 slope
+#2020 slope - hourly
 fit_model <- function(T20) lm(AirT_C ~ Elevation, data = T20)
 get_slope <- function(mod) tidy(mod)$estimate[2]
 
@@ -45,7 +46,7 @@ slope20 <- slope20 %>%
   add_column(r2 = T20_r$r2)
 
 ######################################################################
-#2021 slope
+#2021 slope - hourly
 fit_model <- function(T21) lm(AirT_C ~ Elevation, data = T21)
 get_slope <- function(mod) tidy(mod)$estimate[2]
 
@@ -78,5 +79,89 @@ T21_wide <- T21 %>%
              r2 = T21_r$r2)
 
 #########################################################################
+#take T20 and T21 (original formats) and average by day and sensor
+daily20 <- T20 %>%
+  group_by(daily = format(Datetime, "%Y-%m-%d"), ID, Elevation) %>%
+  summarize(Ta = mean(AirT_C,na.rm=T)) %>% 
+  ungroup()
 
-  
+daily21 <- T21 %>%
+  group_by(daily = format(Datetime, "%Y-%m-%d"), ID, Elevation) %>%
+  summarize(Ta = mean(AirT_C, na.rm=T)) %>%
+  ungroup()
+
+#########################################################################
+#slope and r2 for 2020 daily
+fit_model <- function(daily20) lm(Ta ~ Elevation, data = daily20)
+get_slope <- function(mod) tidy(mod)$estimate[2]
+
+T20_r_daily <- daily20 %>%
+  select(-c(ID)) %>%
+  group_by(daily) %>%
+  summarize(r2 = cor(Elevation, Ta, use="complete.obs")^2)
+
+slope20_d <- daily20 %>%
+  group_nest(daily) %>%
+  mutate(model = map(data, fit_model)) %>%
+  mutate(slope = map_dbl(model, get_slope)) %>%
+  mutate(slope_Ckm = slope*1000)
+
+slope20_d <- slope20_d %>%
+  add_column(r2 = T20_r_daily$r2)
+
+#########################################################################
+#slope and r2 for 2021 daily
+fit_model <- function(daily21) lm(Ta ~ Elevation, data = daily21)
+get_slope <- function(mod) tidy(mod)$estimate[2]
+
+T21_r_daily <- daily21 %>%
+  select(-c(ID)) %>%
+  group_by(daily) %>%
+  summarize(r2 = cor(Elevation, Ta, use="complete.obs")^2)
+
+slope21_d <- daily21 %>%
+  group_nest(daily) %>%
+  mutate(model = map(data, fit_model)) %>%
+  mutate(slope = map_dbl(model, get_slope)) %>%
+  mutate(slope_Ckm = slope*1000)
+
+slope21_d <- slope21_d %>%
+  add_column(r2 = T21_r_daily$r2)
+
+########################################################################
+#look at daily slope for 2020 and 2021
+
+PLOT = "NSTGE_20_daily"
+ggplot(slope20_d, aes(x=as.Date(daily), y=slope_Ckm)) +
+  geom_point(aes(colour=r2)) + 
+  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1) +
+  #ylim(-20,30) +
+  labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
+  #scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  #facet_wrap(~year, scales="free_x") + PlotFormat +
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) 
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+PLOT = "NSTGE_21_daily"
+ggplot(slope21_d, aes(x=as.Date(daily), y=slope_Ckm)) +
+  geom_point(aes(colour=r2)) + 
+  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1) +
+  #ylim(-20,30) +
+  labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
+  #scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  #facet_wrap(~year, scales="free_x") + PlotFormat +
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) 
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+########################################################################
+daily20_test <- daily20 %>%
+  filter(daily == "2020-05-15")
+
+ggplot(daily20_test, aes(Elevation, Ta)) + geom_point()+
+  geom_smooth(method='lm', formula=y~x)
+
+
