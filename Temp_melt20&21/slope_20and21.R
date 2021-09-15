@@ -9,7 +9,9 @@ library(plotly)
 library(gridExtra)
 library(scales)
 library(RColorBrewer)
-library(ggpubr)
+library(plotly)
+library(tidyr)
+library(tibble)
 
 rm(list = ls()) 
 
@@ -113,17 +115,26 @@ slope20_d <- slope20_d %>%
 #slope and r2 for 2021 daily
 fit_model <- function(daily21) lm(Ta ~ Elevation, data = daily21)
 get_slope <- function(mod) tidy(mod)$estimate[2]
+get_p <- function(mod) tidy(mod)$coefficeints[,4]
 
 T21_r_daily <- daily21 %>%
   select(-c(ID)) %>%
   group_by(daily) %>%
   summarize(r2 = cor(Elevation, Ta, use="complete.obs")^2)
+  
+T21_p <- daily21 %>%
+  drop_na() %>%
+  select(-c(ID)) %>%
+  group_by(daily) %>% 
+  do(tidy(t.test(Ta ~ Elevation,data=.))) %>%
+  select(c(id,estimate,estimate1,estimate2,statistic,p.value))
 
 slope21_d <- daily21 %>%
   group_nest(daily) %>%
   mutate(model = map(data, fit_model)) %>%
   mutate(slope = map_dbl(model, get_slope)) %>%
-  mutate(slope_Ckm = slope*1000)
+  mutate(slope_Ckm = slope*1000) %>%
+  mutate(pval = map_dbl(model, get_p))
 
 slope21_d <- slope21_d %>%
   add_column(r2 = T21_r_daily$r2)
@@ -158,10 +169,53 @@ ggplot(slope21_d, aes(x=as.Date(daily), y=slope_Ckm)) +
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 ########################################################################
-daily20_test <- daily20 %>%
-  filter(daily == "2020-05-15")
+daily21
 
-ggplot(daily20_test, aes(Elevation, Ta)) + geom_point()+
-  geom_smooth(method='lm', formula=y~x)
 
+daily21_test <- daily21 %>%
+  filter(daily == "2021-04-15")
+
+daily21_test$side = substr(daily21_test$ID,1,2)
+
+
+eq <- function(x,y) {
+  m <- lm(y ~ x)
+  as.character(
+    as.expression(
+      substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2,
+                 list(a = format(coef(m)[1], digits = 4),
+                      b = format(coef(m)[2], digits = 4),
+                      r2 = format(summary(m)$r.squared, digits = 3)))
+    )
+  )
+}
+
+ggplot(daily21_test, aes(Elevation, Ta)) + geom_point(aes(color=side))+
+  geom_smooth(method='lm', formula=y~x)+
+  ylim(-10,20)+
+  geom_text(x = 3200, y = 5, label = eq(daily21_test$Elevation/1000,daily21_test$Ta), parse = TRUE)
+
+lm <- lm(daily21_test$Ta ~ daily21_test$Elevation)
+summary(lm)
+
+################################################
+
+daily21_fil <- daily21 %>%
+  filter(ID == "MP3")
+
+daily21_fil2 <- daily21 %>%
+  filter(ID == "MP4")
+
+daily21_fil3 <- daily21 %>%
+  filter(ID == "MP5")
+
+daily21_fil4 <- daily21 %>%
+  filter(ID =="MP2")
+
+daily21_fil <- rbind(daily21_fil, daily21_fil2, daily21_fil3, daily21_fil4)
+
+
+temp <- ggplot(daily21_fil, aes(daily, Ta, colour=ID)) + geom_point()
+
+ggplotly(temp)
 
