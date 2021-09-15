@@ -7,6 +7,7 @@ library(plotly)
 library(gridExtra)
 library(scales)
 library(RColorBrewer)
+library(tidyverse)
 
 rm(list = ls()) 
 
@@ -21,6 +22,7 @@ T20 <- read.csv(file = "C:/Users/sears/Documents/Research/Snow_Hydro_Research/Th
 T21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/For R/2021/Melt21_elev_noOUT.csv",
                 header=TRUE) %>%
   mutate(Datetime = mdy_hm(Datetime))
+
 ################################################
 PlotFormat = theme(axis.text=element_text(size=16, color="black"),
                    axis.title.x=element_text(size=18, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
@@ -47,20 +49,20 @@ t20 <- ggplot() + geom_point(data=T20, aes(x=Elevation, y=AirT_C, colour=ID))
 t20
 t21 <- ggplot() + geom_point(data=T21, aes(x=Elevation, y=AirT_C,colour=ID))
 grid.arrange(t20,t21, ncol=2)
-
+t21
 #ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 ##########################
 
-#T20_long <- T20 %>%
-#  select(Datetime, ID, AirT_C) %>%
-#  pivot_wider(names_from = ID, values_from=AirT_C)
+T20_long <- T20 %>%
+  select(Datetime, ID, AirT_C) %>%
+  pivot_wider(names_from = ID, values_from=AirT_C)
 
 #write.csv(T20_long, "T20.csv")
 
-#T21_long <- T21 %>%
-#  select(Datetime, ID, AirT_C) %>%
-#  pivot_wider(names_from = ID, values_from=AirT_C)
+T21_long <- T21 %>%
+  select(Datetime, ID, AirT_C) %>%
+  pivot_wider(names_from = ID, values_from=AirT_C)
 
 #write.csv(T21_long, "T21.csv")
 
