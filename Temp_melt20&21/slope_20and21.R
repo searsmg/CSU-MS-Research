@@ -126,15 +126,17 @@ T21_p <- daily21 %>%
   drop_na() %>%
   select(-c(ID)) %>%
   group_by(daily) %>% 
-  do(tidy(t.test(Ta ~ Elevation,data=.))) %>%
-  select(c(id,estimate,estimate1,estimate2,statistic,p.value))
+  do(tidy(lm(Ta~Elevation, data=daily21))) %>%
+  select(c(daily, p.value))
+
 
 slope21_d <- daily21 %>%
   group_nest(daily) %>%
   mutate(model = map(data, fit_model)) %>%
   mutate(slope = map_dbl(model, get_slope)) %>%
   mutate(slope_Ckm = slope*1000) %>%
-  mutate(pval = map_dbl(model, get_p))
+
+  
 
 slope21_d <- slope21_d %>%
   add_column(r2 = T21_r_daily$r2)
@@ -169,7 +171,6 @@ ggplot(slope21_d, aes(x=as.Date(daily), y=slope_Ckm)) +
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 ########################################################################
-daily21
 
 
 daily21_test <- daily21 %>%
