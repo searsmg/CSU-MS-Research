@@ -5,11 +5,12 @@ library(lubridate)
 library(dplyr)
 library(plotly)
 library(tidyverse)
+library(RNRCS)
 
 rm(list = ls()) 
 
 #set working directory and csv file
-setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/For R")
+setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/For R/2021")
 
 ##########################################################################
 #### PROCESSING ####
@@ -103,7 +104,7 @@ b10_14 <- band_all %>%
 ##########################################################################
 
 ## DON'T NEED TO RUN ANY OF THE ABOVE LINES AS LONG AS RDATA FILE IS READ IN
-load("C:/Users/sears/Documents/Repos/CSU-MS-Research/Melt2021/DFs.Rdata")
+#load("C:/Users/sears/Documents/Repos/CSU-MS-Research/Melt2021/DFs.Rdata")
 
 ## for each band compute LWin
 # first find sat vapor press (ea), then back out Cc. fix Cc for >1 or <1, then calc LW in for all bands
@@ -200,3 +201,37 @@ b10_14 <- b10_14 %>%
   mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((b10_14+273.15)^4)) %>%
   select(-c(Cc_pt1, Cc_pt2, Cc))
+
+
+###########################################################################################
+#running band 4 with observed b4 temp and ELR temp from SNOTEL
+
+#pull in hourly SNOTEL data for temp
+JW21_hr <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
+  mutate(Datetime = ymd_hm(Date))
+
+
+JW21_hr <- JW21_hr %>%
+  mutate(Ta_jw = (Air.Temperature.Observed..degF.-32)*(5/9)) %>%
+  select(c(Datetime, Ta_jw))
+
+
+b4small <- merge(b4, JW21_hr, by = "Datetime")
+
+mf <- 0.2
+bt <- -2
+
+melt <- b4small %>%
+  mutate(melt_Tobs = if_else(mf*(b4-bt)<0,0,mf*(b4-bt))) %>%
+  mutate(Tlap = Ta_jw+(-0.0065*(3175-3089.86))) %>%
+  mutate(melt_Tlap = if_else(mf*(Tlap-bt)<0,0,mf*(Tlap-bt))) %>%
+  mutate(melt_sum_Tlap = cumsum(melt_Tlap),
+         melt_sum_Tobs = cumsum(melt_Tobs))
+
+ggplot(melt)+geom_line(aes(x=Datetime, y=rev(melt_sum_Tlap), color="Tlapse")) +
+  geom_line(aes(x=Datetime, y=rev(melt_sum_Tobs), color="Tobs")) + geom_point(data=swe17, aes(x=Datetime, y=SWE))+
+  labs(y="melt (mm)")
+
+swe17 <- read.csv("swe17.csv") %>%
+  mutate(Datetime=mdy_hm(Datetime))
+            
