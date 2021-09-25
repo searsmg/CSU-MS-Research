@@ -24,6 +24,8 @@ RH_dewpt <- read.csv(file="RH_dewpt_all.csv", header=TRUE) %>%
 
 all21 <- merge(temp_elev_21, RH_dewpt, by=c("Datetime", "ID"))
 
+write.csv(all21, "all21.csv")
+
 #get a temp for each elev band (grouping bands and getting avg temp)
 #bands21 <- all21 %>%
 #  group_by(Datetime, Band) %>%
@@ -233,5 +235,56 @@ ggplot(melt)+geom_line(aes(x=Datetime, y=rev(melt_sum_Tlap), color="Tlapse")) +
   labs(y="melt (mm)")
 
 swe17 <- read.csv("swe17.csv") %>%
-  mutate(Datetime=mdy_hm(Datetime))
-            
+  mutate(Date=ymd(Date))
+
+########################################################
+#now run for MP4 using temp rad index model 
+
+mp4obs <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/mp4obs.csv") %>%
+  mutate(Date=ymd(Date))
+
+mp4elr <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/mp4elr.csv") %>%
+  mutate(Date=ymd(Date))
+
+mp4obs <- mp4obs %>%
+  mutate(melt = if_else(3.552381*(temp-(-1.36621))+(-0.13456)*nrfix<0,0,
+                        3.552381*(temp-(-1.36621))+(-0.13456)*nrfix)) %>%
+  filter(Date > "2021-04-30")
+
+mp4obs$melt_cum <- NA
+mp4obs[1,"melt_cum"] <- 644
+
+for(i in 2:nrow(mp4obs)){
+  if(is.na(mp4obs$melt_cum[i])){
+    mp4obs$melt_cum[i] = mp4obs$melt_cum[i-1]-mp4obs$melt[i]
+  }
+}
+
+ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
+  geom_point(data=swe17, aes(x=Date, y=SWE))
+
+mp4elr <- mp4elr %>%
+  mutate(melt = if_else(3.552381*(Tlap-(-1.36621))+(-0.13456)*nrfix<0,0,
+                        3.552381*(Tlap-(-1.36621))+(-0.13456)*nrfix)) %>%
+  filter(Date > "2021-04-30")
+
+mp4elr$melt_cum <- NA
+mp4elr[1,"melt_cum"] <- 644
+
+for(i in 2:nrow(mp4elr)){
+  if(is.na(mp4elr$melt_cum[i])){
+    mp4elr$melt_cum[i] = mp4elr$melt_cum[i-1]-mp4elr$melt[i]
+  }
+}
+
+ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
+  geom_point(data=swe17, aes(x=Date, y=SWE)) +
+  geom_line(data=mp4elr, aes(Date, melt_cum))
+
+###############################################################
+# above value are T daily so we need to get T hourly from MP4
+
+
+
+
+
