@@ -141,4 +141,5 @@ mp4elr <- mp4 %>%
   select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout))
 
-
+ggplot() + geom_line(data=mp4obs, aes(Date, Lwin_fix)) +
+  geom_line(data=mp4elr, aes(Date, Lwin_fix), color="purple")
