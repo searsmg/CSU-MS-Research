@@ -6,6 +6,7 @@ library(dplyr)
 library(plotly)
 library(tidyverse)
 library(RNRCS)
+library(esquisse)
 
 rm(list = ls()) 
 
@@ -284,7 +285,71 @@ ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
 ###############################################################
 # above value are T daily so we need to get T hourly from MP4
 
+tobs_hr <- all21 %>%
+  filter(ID == "MP4")
+
+minute(tobs_hr$Datetime) <- 0
+
+tobs_hrsum <- tobs_hr %>%
+  mutate(Tpos = if_else(AirT_C <0,0,AirT_C)) %>%
+  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
+  summarize(Tcum = sum(Tpos)*1/24) %>%
+  mutate(Date = as.Date(Date))
 
 
+#get hrly Joe Wright temp so it can be 'lapsed'
+JW21hr <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
+  mutate(Datetime = ymd_hm(Date))
 
+telr_hrsum <- JW21hr %>%
+  select(c(Datetime, Air.Temperature.Observed..degF.)) %>%
+  rename(Tjw = Air.Temperature.Observed..degF.) %>%
+  mutate(Tjw = (Tjw-32)*(5/9)) %>%
+  mutate(tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>%
+  mutate(Tpos = if_else(Tjw <0,0,Tjw)) %>%
+  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
+  summarize(Tcum = sum(Tpos)*1/24) %>%
+  mutate(Date = as.Date(Date))
 
+####################################################################
+#now model using degree day
+
+mp4obs <- merge(tobs_hrsum, mp4obs, "Date")
+
+mp4obs <- mp4obs %>%
+  mutate(melt = if_else(3.552381*(Tcum-(-1.36621))+(-0.13456)*nrfix<0,0,
+                        3.552381*(Tcum-(-1.36621))+(-0.13456)*nrfix)) %>%
+  filter(Date > "2021-04-30")
+
+mp4obs$melt_cum <- NA
+mp4obs[1,"melt_cum"] <- 644
+
+for(i in 2:nrow(mp4obs)){
+  if(is.na(mp4obs$melt_cum[i])){
+    mp4obs$melt_cum[i] = mp4obs$melt_cum[i-1]-mp4obs$melt[i]
+  }
+}
+
+ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
+  geom_point(data=swe17, aes(x=Date, y=SWE))
+
+## elr model
+mp4elr <- merge(tlap_hrsum, mp4elr, "Date")
+
+mp4elr <- mp4elr %>%
+  mutate(melt = if_else(3.552381*(Tcum-(-1.36621))+(-0.13456)*nrfix<0,0,
+                        3.552381*(Tcum-(-1.36621))+(-0.13456)*nrfix)) %>%
+  filter(Date > "2021-04-30")
+
+mp4elr$melt_cum <- NA
+mp4elr[1,"melt_cum"] <- 644
+
+for(i in 2:nrow(mp4elr)){
+  if(is.na(mp4elr$melt_cum[i])){
+    mp4elr$melt_cum[i] = mp4elr$melt_cum[i-1]-mp4elr$melt[i]
+  }
+}
+
+ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
+  geom_point(data=swe17, aes(x=Date, y=SWE)) +
+  geom_line(data=mp4elr, aes(Date, melt_cum), color="purple")
