@@ -52,7 +52,7 @@ JW21_al[1,"actual_al"] <- 0.5
 
 for(i in 2:nrow(JW21_al)){
   if(is.na(JW21_al$actual_al[i])){
-    JW21_al$actual_al[i] = ((JW21_al$actual_al[i-1]-JW21_al$al_min[i])*exp(-0.01)) + JW21_al$al_min[i]
+    JW21_al$actual_al[i] = ((JW21_al$actual_al[i-1]-JW21_al$al_min[i])*exp(-0.01*24)) + JW21_al$al_min[i]
   }
 }
 
@@ -62,26 +62,38 @@ JW21_al <- JW21_al %>%
 ggplot(JW21_al)+geom_line(aes(Date, actual_al))
 
 ################################################################
-#hourly rad data to daily rad
-rad_daily <- rad21 %>%
-  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
+#hourly rad data 
+rad_hr <- rad21 %>%
+  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
+  group_by(dt_agg) %>%
   summarize(avgSWin = mean(Swin),
             avgLWin = mean(Lwin),
-            avgLWout = mean(Lwout)) %>%
-  mutate(Date = ymd(Date))
+            avgLWout = mean(Lwout)) #%>%
+#  mutate(Datetime = ymd_hm(Datetime))
 
-JWrad_daily <- merge(JW21_al, rad_daily, by="Date")
+#get actual_al from day to hourly - assume albedo is constant through day
+al_hr <- JW21_al %>%
+  select(Date, actual_al) %>%
+  mutate(doy = yday(Date))
 
-JWrad_daily <- JWrad_daily %>%
+rad_hr <- rad_hr %>%
+  mutate(doy = yday(dt_agg))
+
+JWrad_hr <- merge(al_hr, rad_hr, by="doy") 
+
+##############################################################
+#now calculate hourly rad data
+
+JWrad_hr <- JWrad_hr %>%
   mutate(SWnet = avgSWin*(1-actual_al),
          LWnet = avgLWin-avgLWout) %>%
   mutate(nr = SWnet+LWnet) %>%
-  select(c(Date, SWnet, avgLWin, avgLWout, LWnet, nr, Ta_C))
+  select(c(dt_agg, avgSWin, SWnet, avgLWin, avgLWout, LWnet, nr)) %>%
+  rename(Datetime = dt_agg)
 
-ggplot(JWrad_daily)+geom_line(aes(Date, SWnet)) +
-  geom_line(aes(Date, LWnet), color="purple") +
-  geom_line(aes(Date, nr), color="red")
-
+ggplot(JWrad_hr)+geom_line(aes(dt_agg,nr)) +
+  geom_line(aes(dt_agg, avgSWin), color="purple") +
+  geom_line(aes(dt_agg, nr), color="red")
 
 ####################################################################
 #model LWin for MP4 so bring in MP4 data
@@ -92,6 +104,17 @@ temp_elev_21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Rese
 RH_dewpt <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/For R/2021/RH_dewpt_all.csv", 
                      header=TRUE) %>%
   mutate(Datetime = mdy_hm(Datetime))
+
+#need to bring in hourly SNOTEL temp for ELR
+JW21_temphr <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
+  mutate(Datetime = ymd_hm(Date))
+
+jwtemp <- JW21_temphr %>%
+  rename(Tjw = Air.Temperature.Observed..degF.) %>%
+  mutate(Tjw = (Tjw-32)*(5/9)) %>%
+  select(c(Datetime, Tjw))
+
+JWrad_hr <- merge(jwtemp, JWrad_hr, by="Datetime")
 
 mp4 <- temp_elev_21 %>%
   filter(ID == "MP4")
@@ -107,32 +130,27 @@ minute(mp4$Datetime) <- 0
 stef <- 5.67 * 10^-8
 
 mp4 <- mp4 %>%
-  select(-c(ID.x, ID.y, Elevation, Band)) %>%
-  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
-  summarize(temp = mean(AirT_C, na.rm=T),
-         rh = mean(humidity),
-         dewpt = mean(dewpoint)) %>%
-  mutate(Date = ymd(Date))
+  select(-c(ID.x, ID.y, Elevation, Band))
 
-mp4 <- merge(mp4, JWrad_daily, "Date")
+mp4 <- merge(mp4, JWrad_hr, "Datetime")
 
 #model NR for MP4 using obs T
 mp4obs <- mp4 %>%
-  mutate(esat = (6.112*exp((17.62*temp)/(243.12+temp)))) %>%
-  mutate(ea = (rh * esat)/100) %>%
-  mutate(Cc_pt1 = avgLWin/((stef)*(temp+273.15)^4)) %>%
+  mutate(esat = (6.112*exp((17.62*AirT_C)/(243.12+AirT_C)))) %>%
+  mutate(ea = (humidity * esat)/100) %>%
+  mutate(Cc_pt1 = avgLWin/((stef)*(AirT_C+273.15)^4)) %>%
   mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
   mutate(Cc = (Cc_pt2 -1)/0.4) %>%
   mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
-  mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((temp+273.15)^4)) %>%
+  mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((AirT_C+273.15)^4)) %>%
   select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout))
 
 #model NR for MP4 using lapsed T from SNOTEL
 mp4elr <- mp4 %>%
-  mutate(Tlap = Ta_C+(-0.0065*(3197.48-3089.86))) %>%
+  mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>%
   mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
-  mutate(ea = (rh * esat)/100) %>%
+  mutate(ea = (humidity * esat)/100) %>%
   mutate(Cc_pt1 = avgLWin/((stef)*(Tlap+273.15)^4)) %>%
   mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
   mutate(Cc = (Cc_pt2 -1)/0.4) %>%
@@ -141,8 +159,9 @@ mp4elr <- mp4 %>%
   select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout))
 
-ggplot() + geom_line(data=mp4obs, aes(Date, nrfix)) +
-  geom_line(data=mp4elr, aes(Date, nrfix), color="purple")
+ggplot() + geom_line(data=mp4obs, aes(Datetime, nrfix)) +
+  geom_line(data=mp4elr, aes(Datetime, nrfix), color="purple")
 
 write.csv(mp4obs, "mp4obs.csv")
 write.csv(mp4elr, "mp4elr.csv")
+write.csv(JWrad_hr, "JWrad_hr.csv")
