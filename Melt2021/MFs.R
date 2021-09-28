@@ -15,10 +15,10 @@ setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL"
 
 ######################################################
 
-#bring in rad data using CAIC (brought in from melt21.R)
-rad21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/JWrad_daily.csv", 
+#bring in rad data using CAIC (brought in from rad21_modeling.R)
+rad21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/JWrad_hr.csv", 
                   header=TRUE) %>%
-  mutate(Date = ymd(Date))
+  mutate(Datetime = ymd_hms(Datetime))
 
 ######################################################
 #pull in daily SNOTEL data -- THIS IS DAILY
@@ -39,7 +39,16 @@ JW21_daily <- JW21_daily %>%
   select(-c(Ta_F, precip_accum_in, Sd_in, SWE_in))
 
 
-JW21_daily <- merge(JW21_daily, rad21, by="Date")
+#get the cumulative T sum and rad sums for the modeled melt
+JWhrsum <- rad21 %>%
+  mutate(Tpos = if_else(Tjw <0,0,Tjw)) %>%
+  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
+  summarize(Tcum = sum(Tpos)*1/24,
+            radcum = sum(nr)*1/24) %>%
+  mutate(Date = as.Date(Date))
+
+
+JW21_daily <- merge(JW21_daily, JWhrsum, by="Date")
 
 ######################################################
 #find observed melt
@@ -64,11 +73,13 @@ melt_op <- function(data, par){
 }
 
 MFs <- optim(par=c(0.11,0,0.2), fn=melt_op, data=JW21_melt)
+
 #write.csv(JW21_melt, "JW21_melt.csv")
+
 ######################################################
 #see how SNOTEL looks with new MFs
 JW21_melt_test <- JW21_melt %>%
-  mutate(melt_mod = if_else(3.552381*(Ta_C.x-(-1.36621))+(-0.13456)*nr<0,0,3.552381*(Ta_C.x-(-1.36621))+(-0.13456)*nr)) %>%
+  mutate(melt_mod = if_else(2.259125*(Tcum-(1.896416))+(0.163241)*radcum<0,0,2.259125*(Tcum-(1.896416))+(0.163241)*radcum)) %>%
   mutate(melt_mod_cum = cumsum(melt_mod),
          melt_obs_cum = cumsum(melt_obs))
 
