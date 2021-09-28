@@ -57,10 +57,13 @@ JW21_melt <- JW21_daily %>%
   mutate(precip_mmday = PrecipAcum_mm - lag(PrecipAcum_mm)) %>%
   mutate(melt_mmday = ifelse(precip_mmday > 0,ifelse(lag(Sd_mm)>Sd_mm, (lag(SWE_mm)-SWE_mm)-precip_mmday,
                                                  precip_mmday-(SWE_mm-lag(SWE_mm))),
-                              lag(SWE_mm)-SWE_mm)) %>%
+                              lag(SWE_mm)-SWE_mm),
+         freshsnow = ifelse(lag(Sd_mm)<Sd_mm, precip_mmday, 0)) %>%
   mutate(melt_obs = ifelse(melt_mmday < 0, 0, melt_mmday))
 
 JW21_melt[is.na(JW21_melt)] <- 0
+
+write.csv(JW21_melt, "JW21_melt.csv")
 
 JW21_melt <- JW21_melt %>%
   filter(Date <= "2021-06-11")
