@@ -25,7 +25,7 @@ RH_dewpt <- read.csv(file="RH_dewpt_all.csv", header=TRUE) %>%
 
 all21 <- merge(temp_elev_21, RH_dewpt, by=c("Datetime", "ID"))
 
-write.csv(all21, "all21.csv")
+#write.csv(all21, "all21.csv")
 
 #get a temp for each elev band (grouping bands and getting avg temp)
 #bands21 <- all21 %>%
@@ -209,32 +209,6 @@ b10_14 <- b10_14 %>%
 ###########################################################################################
 #running band 4 with observed b4 temp and ELR temp from SNOTEL
 
-#pull in hourly SNOTEL data for temp
-JW21_hr <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
-  mutate(Datetime = ymd_hm(Date))
-
-
-JW21_hr <- JW21_hr %>%
-  mutate(Ta_jw = (Air.Temperature.Observed..degF.-32)*(5/9)) %>%
-  select(c(Datetime, Ta_jw))
-
-
-b4small <- merge(b4, JW21_hr, by = "Datetime")
-
-mf <- 0.2
-bt <- -2
-
-melt <- b4small %>%
-  mutate(melt_Tobs = if_else(mf*(b4-bt)<0,0,mf*(b4-bt))) %>%
-  mutate(Tlap = Ta_jw+(-0.0065*(3175-3089.86))) %>%
-  mutate(melt_Tlap = if_else(mf*(Tlap-bt)<0,0,mf*(Tlap-bt))) %>%
-  mutate(melt_sum_Tlap = cumsum(melt_Tlap),
-         melt_sum_Tobs = cumsum(melt_Tobs))
-
-ggplot(melt)+geom_line(aes(x=Datetime, y=rev(melt_sum_Tlap), color="Tlapse")) +
-  geom_line(aes(x=Datetime, y=rev(melt_sum_Tobs), color="Tobs")) + geom_point(data=swe17, aes(x=Datetime, y=SWE))+
-  labs(y="melt (mm)")
-
 swe17 <- read.csv("swe17.csv") %>%
   mutate(Date=ymd(Date))
 
@@ -242,129 +216,124 @@ swe17 <- read.csv("swe17.csv") %>%
 #now run for MP4 using temp rad index model 
 
 mp4obs <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/mp4obs.csv") %>%
-  mutate(Date=ymd(Date))
+  mutate(Datetime=ymd_hms(Datetime))
 
 mp4elr <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/mp4elr.csv") %>%
-  mutate(Date=ymd(Date))
-
-mp4obs <- mp4obs %>%
-  mutate(melt = if_else(3.552381*(temp-(-1.36621))+(-0.13456)*nrfix<0,0,
-                        3.552381*(temp-(-1.36621))+(-0.13456)*nrfix)) %>%
-  filter(Date > "2021-04-30")
-
-mp4obs$melt_cum <- NA
-mp4obs[1,"melt_cum"] <- 644
-
-for(i in 2:nrow(mp4obs)){
-  if(is.na(mp4obs$melt_cum[i])){
-    mp4obs$melt_cum[i] = mp4obs$melt_cum[i-1]-mp4obs$melt[i]
-  }
-}
-
-ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
-  geom_point(data=swe17, aes(x=Date, y=SWE))
-
-mp4elr <- mp4elr %>%
-  mutate(melt = if_else(3.552381*(Tlap-(-1.36621))+(-0.13456)*nrfix<0,0,
-                        3.552381*(Tlap-(-1.36621))+(-0.13456)*nrfix)) %>%
-  filter(Date > "2021-04-30")
-
-mp4elr$melt_cum <- NA
-mp4elr[1,"melt_cum"] <- 644
-
-for(i in 2:nrow(mp4elr)){
-  if(is.na(mp4elr$melt_cum[i])){
-    mp4elr$melt_cum[i] = mp4elr$melt_cum[i-1]-mp4elr$melt[i]
-  }
-}
-
-ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
-  geom_point(data=swe17, aes(x=Date, y=SWE)) +
-  geom_line(data=mp4elr, aes(Date, melt_cum), color="purple")
+  mutate(Datetime=ymd_hms(Datetime))
 
 ###############################################################
-# above value are T daily so we need to get T hourly from MP4
+# getting cum T and rad
 
-tobs_hr <- all21 %>%
-  filter(ID == "MP4")
-
-minute(tobs_hr$Datetime) <- 0
-
-tobs_hrsum <- tobs_hr %>%
+tobs_hrsum <- mp4obs %>%
   mutate(Tpos = if_else(AirT_C <0,0,AirT_C)) %>%
   group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
-  summarize(Tcum = sum(Tpos)*1/24) %>%
+  summarize(Tcum = sum(Tpos)*1/24,
+            radcum = sum(nrfix)*1/24) %>%
   mutate(Date = as.Date(Date))
 
-
-#get hrly Joe Wright temp so it can be 'lapsed'
-JW21hr <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
-  mutate(Datetime = ymd_hm(Date))
-
-telr_hrsum <- JW21hr %>%
-  select(c(Datetime, Air.Temperature.Observed..degF.)) %>%
-  rename(Tjw = Air.Temperature.Observed..degF.) %>%
-  mutate(Tjw = (Tjw-32)*(5/9)) %>%
-  mutate(tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>%
-  mutate(Tpos = if_else(Tjw <0,0,Tjw)) %>%
+telr_hrsum <- mp4elr %>%
+  mutate(Tpos = if_else(Tlap <0,0,Tlap)) %>%
   group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
-  summarize(Tcum = sum(Tpos)*1/24) %>%
+  summarize(Tcum = sum(Tpos)*1/24,
+            radcum = sum(nrfix)*1/24) %>%
   mutate(Date = as.Date(Date))
 
 ####################################################################
-#now model using degree day
+#now model using degree day for T and rad
 
-mp4obs <- merge(tobs_hrsum, mp4obs, "Date")
+#define params
+mft <- 2.6649 #2.259125
+reft <- 0.2357 #1.896416
+mfr <- 0.2165 #0.163241
 
-mp4obs <- mp4obs %>%
-  mutate(melt = if_else(3.552381*(Tcum-(-1.36621))+(-0.13456)*nrfix<0,0,
-                        3.552381*(Tcum-(-1.36621))+(-0.13456)*nrfix)) %>%
+tobs_hrsum <- tobs_hrsum %>%
+  mutate(melt = if_else(mft*(Tcum-(reft))+(mfr)*radcum<0,0,
+                        mft*(Tcum-(reft))+(mfr)*radcum)) %>%
   filter(Date > "2021-04-30")
 
-mp4obs$melt_cum <- NA
-mp4obs[1,"melt_cum"] <- 644
+tobs_hrsum$melt_cum <- as.numeric(NA)
+tobs_hrsum[1,"melt_cum"] <- 644
 
-for(i in 2:nrow(mp4obs)){
-  if(is.na(mp4obs$melt_cum[i])){
-    mp4obs$melt_cum[i] = mp4obs$melt_cum[i-1]-mp4obs$melt[i]
+for(i in 2:nrow(tobs_hrsum)){
+  if(is.na(tobs_hrsum$melt_cum[i])){
+    tobs_hrsum$melt_cum[i] = tobs_hrsum$melt_cum[i-1]-tobs_hrsum$melt[i]
   }
 }
 
-ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
+#then add fresh snow in
+fsnow <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/JW21_melt.csv") %>%
+  mutate(Date = ymd(Date)) %>%
+  select(c(Date, freshsnow))
+
+tobs_hrsum <- merge(tobs_hrsum, fsnow, by="Date")
+
+tobs_hrsum <- tobs_hrsum %>%
+  mutate(melt_fix = melt_cum + freshsnow)
+
+#write.csv(tobs_hrsum, "mf_mp4.csv")
+
+ggplot() + geom_line(data=tobs_hrsum, aes(Date, melt_fix)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
 
-## elr model
-mp4elr <- merge(telr_hrsum, mp4elr, "Date")
-
-mp4elr <- mp4elr %>%
-  mutate(melt = if_else(3.552381*(Tcum-(-1.36621))+(-0.13456)*nrfix<0,0,
-                        3.552381*(Tcum-(-1.36621))+(-0.13456)*nrfix)) %>%
+##elr model
+telr_hrsum <- telr_hrsum %>%
+  mutate(melt = if_else(mft*(Tcum-(reft))+(mfr)*radcum<0,0,
+                        mft*(Tcum-(reft))+(mfr)*radcum)) %>%
   filter(Date > "2021-04-30")
 
-mp4elr$melt_cum <- NA
-mp4elr[1,"melt_cum"] <- 644
+telr_hrsum$melt_cum <- as.numeric(NA)
+telr_hrsum[1,"melt_cum"] <- 644
 
-for(i in 2:nrow(mp4elr)){
-  if(is.na(mp4elr$melt_cum[i])){
-    mp4elr$melt_cum[i] = mp4elr$melt_cum[i-1]-mp4elr$melt[i]
+for(i in 2:nrow(telr_hrsum)){
+  if(is.na(telr_hrsum$melt_cum[i])){
+    telr_hrsum$melt_cum[i] = telr_hrsum$melt_cum[i-1]-telr_hrsum$melt[i]
   }
 }
 
-mp4obs <- mp4obs %>%
+telr_hrsum <- merge(telr_hrsum, fsnow, by="Date")
+
+telr_hrsum <- telr_hrsum %>%
+  mutate(melt_fix = melt_cum + freshsnow)
+
+ggplot() + geom_line(data=telr_hrsum, aes(Date, melt_fix)) +
+  geom_point(data=swe17, aes(x=Date, y=SWE))
+
+#filter so melt does not go negative 
+tobs_hrsum <- tobs_hrsum %>%
   filter(melt_cum >0)
 
-mp4elr <- mp4elr %>%
+telr_hrsum <- telr_hrsum %>%
   filter(melt_cum > 0)
 
-compare1 <- ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
+#plot the two to compare elr vs obs
+compare1 <- ggplot() + geom_line(data=tobs_hrsum, aes(Date, melt_fix)) +
   geom_point(data=swe17, aes(x=Date, y=SWE)) +
-  geom_line(data=mp4elr, aes(Date, melt_cum), color="purple")
+  geom_line(data=telr_hrsum, aes(Date, melt_fix), color="purple")
 
 ggplotly(compare1)
 
-mp4_diff <- mp4obs %>%
-  mutate(Obs_ELR = melt_cum - mp4elr$melt_cum,
-         ELR_Obs = mp4elr$melt_cum - melt_cum)
+mp4_diff <- tobs_hrsum %>%
+  filter(Date < "2021-06-02") %>%
+  mutate(Obs_ELR = melt_fix - telr_hrsum$melt_fix,
+         ELR_Obs = telr_hrsum$melt_fix - melt_fix)
 
 ggplot(mp4_diff) + geom_line(aes(Date, Obs_ELR)) +
   geom_line(aes(Date, ELR_Obs), color="purple")
+
+#looking at air temp, rad
+ggplot() + geom_line(data=mp4obs, aes(Datetime, AirT_C)) +
+  geom_line(data=mp4elr, aes(Datetime, Tlap), color="red")
+
+#############################################################################
+#trying to get site specific melt factors for mp4 
+
+#need avg daily rad and temp
+ssmf <- mp4obs %>%
+  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
+  summarize(avgt = mean(AirT_C),
+            avgr = mean(nrfix)) %>%
+  mutate(Date = as.Date(Date))
+
+ssmf <- merge(ssmf, fsnow, by="Date")
+write.csv(ssmf, "ssmf.csv")
+############################################################
