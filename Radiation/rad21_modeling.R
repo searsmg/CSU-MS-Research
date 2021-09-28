@@ -91,9 +91,9 @@ JWrad_hr <- JWrad_hr %>%
   select(c(dt_agg, avgSWin, SWnet, avgLWin, avgLWout, LWnet, nr)) %>%
   rename(Datetime = dt_agg)
 
-ggplot(JWrad_hr)+geom_line(aes(dt_agg,nr)) +
-  geom_line(aes(dt_agg, avgSWin), color="purple") +
-  geom_line(aes(dt_agg, nr), color="red")
+ggplot(JWrad_hr)+geom_line(aes(Datetime,nr)) +
+  geom_line(aes(Datetime, avgSWin), color="purple") +
+  geom_line(aes(Datetime, nr), color="red")
 
 ####################################################################
 #model LWin for MP4 so bring in MP4 data
@@ -165,3 +165,9 @@ ggplot() + geom_line(data=mp4obs, aes(Datetime, nrfix)) +
 write.csv(mp4obs, "mp4obs.csv")
 write.csv(mp4elr, "mp4elr.csv")
 write.csv(JWrad_hr, "JWrad_hr.csv")
+
+ggplot() + geom_line(data=JWrad_hr, aes(Datetime, avgLWin)) +
+  geom_line(data=mp4obs, aes(Datetime, Lwin_fix), color="blue") +
+  geom_line(data=mp4elr, aes(Datetime, Lwin_fix), color="red")
+
+
