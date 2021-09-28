@@ -280,7 +280,7 @@ for(i in 2:nrow(mp4elr)){
 
 ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE)) +
-  geom_line(data=mp4elr, aes(Date, melt_cum))
+  geom_line(data=mp4elr, aes(Date, melt_cum), color="purple")
 
 ###############################################################
 # above value are T daily so we need to get T hourly from MP4
@@ -334,7 +334,7 @@ ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
 
 ## elr model
-mp4elr <- merge(tlap_hrsum, mp4elr, "Date")
+mp4elr <- merge(telr_hrsum, mp4elr, "Date")
 
 mp4elr <- mp4elr %>%
   mutate(melt = if_else(3.552381*(Tcum-(-1.36621))+(-0.13456)*nrfix<0,0,
@@ -350,6 +350,21 @@ for(i in 2:nrow(mp4elr)){
   }
 }
 
-ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
+mp4obs <- mp4obs %>%
+  filter(melt_cum >0)
+
+mp4elr <- mp4elr %>%
+  filter(melt_cum > 0)
+
+compare1 <- ggplot() + geom_line(data=mp4obs, aes(Date, melt_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE)) +
   geom_line(data=mp4elr, aes(Date, melt_cum), color="purple")
+
+ggplotly(compare1)
+
+mp4_diff <- mp4obs %>%
+  mutate(Obs_ELR = melt_cum - mp4elr$melt_cum,
+         ELR_Obs = mp4elr$melt_cum - melt_cum)
+
+ggplot(mp4_diff) + geom_line(aes(Date, Obs_ELR)) +
+  geom_line(aes(Date, ELR_Obs), color="purple")
