@@ -81,8 +81,14 @@ MFs <- optim(par=c(0.11,0,0.2), fn=melt_op, data=JW21_melt)
 
 ######################################################
 #see how SNOTEL looks with new MFs
+mft <- 1.588608537
+tref <- 0
+mfr <- 0.146665342
+
 JW21_melt_test <- JW21_melt %>%
-  mutate(melt_mod = if_else(2.259125*(Tcum-(1.896416))+(0.163241)*radcum<0,0,2.259125*(Tcum-(1.896416))+(0.163241)*radcum)) %>%
+  mutate(melt_mod = if_else(Tcum<=tref,mfr*radcum,
+                                    mft*(Tcum-tref)+mfr*radcum)) %>%
+  mutate(melt_mod = pmax(melt_mod, 0)) %>%
   mutate(melt_mod_cum = cumsum(melt_mod),
          melt_obs_cum = cumsum(melt_obs))
 
