@@ -207,8 +207,7 @@ b10_14 <- b10_14 %>%
 
 
 ###########################################################################################
-#running band 4 with observed b4 temp and ELR temp from SNOTEL
-
+#bringing in swe data for mp4 (swe17)
 swe17 <- read.csv("swe17.csv") %>%
   mutate(Date=ymd(Date))
 
@@ -242,13 +241,14 @@ telr_hrsum <- mp4elr %>%
 #now model using degree day for T and rad
 
 #define params
-mft <- 2.6649 #2.259125
-reft <- 0.2357 #1.896416
-mfr <- 0.2165 #0.163241
+mft <- 1.588608537 #- 0.794304085
+tref <- 0
+mfr <- 0.146665342 #- 0.073332691
 
 tobs_hrsum <- tobs_hrsum %>%
-  mutate(melt = if_else(mft*(Tcum-(reft))+(mfr)*radcum<0,0,
-                        mft*(Tcum-(reft))+(mfr)*radcum)) %>%
+  mutate(melt = if_else(Tcum<=tref,mfr*radcum,
+                        mft*(Tcum-tref)+mfr*radcum)) %>%
+  mutate(melt = pmax(melt, 0)) %>%
   filter(Date > "2021-04-30")
 
 tobs_hrsum$melt_cum <- as.numeric(NA)
@@ -277,8 +277,9 @@ ggplot() + geom_line(data=tobs_hrsum, aes(Date, melt_fix)) +
 
 ##elr model
 telr_hrsum <- telr_hrsum %>%
-  mutate(melt = if_else(mft*(Tcum-(reft))+(mfr)*radcum<0,0,
-                        mft*(Tcum-(reft))+(mfr)*radcum)) %>%
+  mutate(melt = if_else(Tcum<=tref,mfr*radcum,
+                        mft*(Tcum-tref)+mfr*radcum)) %>%
+  mutate(melt = pmax(melt, 0)) %>%
   filter(Date > "2021-04-30")
 
 telr_hrsum$melt_cum <- as.numeric(NA)
@@ -300,7 +301,7 @@ ggplot() + geom_line(data=telr_hrsum, aes(Date, melt_fix)) +
 
 #filter so melt does not go negative 
 tobs_hrsum <- tobs_hrsum %>%
-  filter(melt_cum >0)
+  filter(melt_cum > 0)
 
 telr_hrsum <- telr_hrsum %>%
   filter(melt_cum > 0)
@@ -311,6 +312,7 @@ compare1 <- ggplot() + geom_line(data=tobs_hrsum, aes(Date, melt_fix)) +
   geom_line(data=telr_hrsum, aes(Date, melt_fix), color="purple")
 
 ggplotly(compare1)
+compare1
 
 mp4_diff <- tobs_hrsum %>%
   filter(Date < "2021-06-02") %>%
@@ -320,20 +322,17 @@ mp4_diff <- tobs_hrsum %>%
 ggplot(mp4_diff) + geom_line(aes(Date, Obs_ELR)) +
   geom_line(aes(Date, ELR_Obs), color="purple")
 
-#looking at air temp, rad
-ggplot() + geom_line(data=mp4obs, aes(Datetime, AirT_C)) +
-  geom_line(data=mp4elr, aes(Datetime, Tlap), color="red")
-
 #############################################################################
 #trying to get site specific melt factors for mp4 
+#DOESN'T WORK SO COMMENTED OUT
 
 #need avg daily rad and temp
-ssmf <- mp4obs %>%
-  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
-  summarize(avgt = mean(AirT_C),
-            avgr = mean(nrfix)) %>%
-  mutate(Date = as.Date(Date))
+#ssmf <- mp4obs %>%
+#  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
+#  summarize(avgt = mean(AirT_C),
+#            avgr = mean(nrfix)) %>%
+#  mutate(Date = as.Date(Date))
 
-ssmf <- merge(ssmf, fsnow, by="Date")
-write.csv(ssmf, "ssmf.csv")
+#ssmf <- merge(ssmf, fsnow, by="Date")
+#write.csv(ssmf, "ssmf.csv")
 ############################################################
