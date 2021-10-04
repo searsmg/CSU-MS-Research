@@ -56,9 +56,6 @@ for(i in 2:nrow(JW21_al)){
   }
 }
 
-JW21_al <- JW21_al %>%
-  mutate(actual_al = ifelse(Date > "2021-06-11", 0.2, actual_al))
-
 ggplot(JW21_al)+geom_line(aes(Date, actual_al))
 
 ################################################################
@@ -85,6 +82,7 @@ JWrad_hr <- merge(al_hr, rad_hr, by="doy")
 #now calculate hourly rad data
 
 JWrad_hr <- JWrad_hr %>%
+  mutate(avgLWout = if_else(avgLWout > 315.64, 315.64, avgLWout)) %>%
   mutate(SWnet = avgSWin*(1-actual_al),
          LWnet = avgLWin-avgLWout) %>%
   mutate(nr = SWnet+LWnet) %>%
@@ -109,13 +107,16 @@ RH_dewpt <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research
 JW21_temphr <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
   mutate(Datetime = ymd_hm(Date))
 
+#get it into deg C from hourly SNOTEL
 jwtemp <- JW21_temphr %>%
   rename(Tjw = Air.Temperature.Observed..degF.) %>%
   mutate(Tjw = (Tjw-32)*(5/9)) %>%
   select(c(Datetime, Tjw))
 
+#add jwtemp to the JWrad_hr data
 JWrad_hr <- merge(jwtemp, JWrad_hr, by="Datetime")
 
+#next several lines are pulling mp4 then merging  back w/ rad data
 mp4 <- temp_elev_21 %>%
   filter(ID == "MP4")
 
@@ -159,6 +160,7 @@ mp4elr <- mp4 %>%
   select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout))
 
+#make plots showing the diff between obs and elr rad data and TEMP
 ggplot() + geom_line(data=mp4obs, aes(Datetime, nrfix)) +
   geom_line(data=mp4elr, aes(Datetime, nrfix), color="purple")
 
