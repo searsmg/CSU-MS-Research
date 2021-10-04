@@ -145,7 +145,8 @@ mp4obs <- mp4 %>%
   mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((AirT_C+273.15)^4)) %>%
   select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
-  mutate(nrfix = SWnet + (Lwin_fix-avgLWout))
+  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(LWnet = Lwin_fix - avgLWout)
 
 #model NR for MP4 using lapsed T from SNOTEL
 mp4elr <- mp4 %>%
@@ -158,19 +159,20 @@ mp4elr <- mp4 %>%
   mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
   select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
-  mutate(nrfix = SWnet + (Lwin_fix-avgLWout))
+  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(LWnet = Lwin_fix - avgLWout)
 
 #make plots showing the diff between obs and elr rad data and TEMP
 #first, get the diff between obs and elr
 mp4obs <- mp4obs %>%
   mutate(nrdif = nrfix - mp4elr$nrfix,
          swdif = SWnet - mp4elr$SWnet,
-         lwdif = (Lwin_fix - avgLWout) - (mp4elr$Lwin_fix - mp4elr$avgLWout),
+         lwdif = LWnet - mp4elr$LWnet,
          tdif = AirT_C - mp4elr$Tlap)
 
 
-ggplot(mp4obs) + geom_line(aes(Datetime, AirT_C), size=1) +
-  geom_line(aes(Datetime, tdif), color="purple", size=1)
+ggplot(mp4obs) + geom_line(aes(Datetime, LWnet), size=1) +
+  geom_line(aes(Datetime, lwdif), color="purple", size=1)
 
 write.csv(mp4obs, "mp4obs.csv")
 write.csv(mp4elr, "mp4elr.csv")
