@@ -161,15 +161,19 @@ mp4elr <- mp4 %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout))
 
 #make plots showing the diff between obs and elr rad data and TEMP
-ggplot() + geom_line(data=mp4obs, aes(Datetime, nrfix)) +
-  geom_line(data=mp4elr, aes(Datetime, nrfix), color="purple")
+#first, get the diff between obs and elr
+mp4obs <- mp4obs %>%
+  mutate(nrdif = nrfix - mp4elr$nrfix,
+         swdif = SWnet - mp4elr$SWnet,
+         lwdif = (Lwin_fix - avgLWout) - (mp4elr$Lwin_fix - mp4elr$avgLWout),
+         tdif = AirT_C - mp4elr$Tlap)
+
+
+ggplot(mp4obs) + geom_line(aes(Datetime, AirT_C), size=1) +
+  geom_line(aes(Datetime, tdif), color="purple", size=1)
 
 write.csv(mp4obs, "mp4obs.csv")
 write.csv(mp4elr, "mp4elr.csv")
 write.csv(JWrad_hr, "JWrad_hr.csv")
-
-ggplot() + geom_line(data=JWrad_hr, aes(Datetime, avgLWin)) +
-  geom_line(data=mp4obs, aes(Datetime, Lwin_fix), color="blue") +
-  geom_line(data=mp4elr, aes(Datetime, Lwin_fix), color="red")
 
 
