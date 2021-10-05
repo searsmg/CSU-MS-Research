@@ -211,6 +211,23 @@ b10_14 <- b10_14 %>%
 swe17 <- read.csv("swe17.csv") %>%
   mutate(Date=ymd(Date))
 
+#see if hourly precip works to improve the model of added snow
+fsnow_hr <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/jwhr.csv") %>%
+  mutate(Datetime=mdy_hm(Datetime))
+
+fsnow_test <- fsnow_hr %>%
+  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
+  summarize(fsnow = sum(freshsnow_mm)) %>%
+  mutate(Date = as.Date(Date))
+
+#now try to apply fresh snow using modeled precip based on elevation from Liston and Elder 2006
+fsnow_plap <- fsnow_hr %>%
+  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
+  summarize(fsnow = sum(freshsnow_mm)) %>%
+  mutate(Date = as.Date(Date)) %>%
+  mutate(fsnow_fix = fsnow*10) #1.05056 is from liston and elder 2006
+
+
 ########################################################
 #now run for MP4 using temp rad index model 
 
@@ -241,9 +258,9 @@ telr_hrsum <- mp4elr %>%
 #now model using degree day for T and rad
 
 #define params
-mft <- 1.588608537 - 0.794304085
-tref <- 2.5
-mfr <- 0.146665342 - 0.073332691
+mft <- 1.588608537 # 0.794304085
+tref <- 0
+mfr <- 0.146665342 #- 0.073332691
 
 tobs_hrsum <- tobs_hrsum %>%
   mutate(melt = if_else(Tcum<=tref,mfr*radcum,
@@ -265,7 +282,7 @@ fsnow <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/
   mutate(Date = ymd(Date)) %>%
   select(c(Date, freshsnow))
 
-tobs_hrsum <- merge(tobs_hrsum, fsnow, by="Date")
+tobs_hrsum <- merge(tobs_hrsum, fsnow, by="Date") #update later depending on fsnow
 
 tobs_hrsum <- tobs_hrsum %>%
   mutate(melt_fix = melt_cum + freshsnow)
@@ -291,7 +308,7 @@ for(i in 2:nrow(telr_hrsum)){
   }
 }
 
-telr_hrsum <- merge(telr_hrsum, fsnow, by="Date")
+telr_hrsum <- merge(telr_hrsum, fsnow, by="Date") #update fsnow
 
 telr_hrsum <- telr_hrsum %>%
   mutate(melt_fix = melt_cum + freshsnow)
