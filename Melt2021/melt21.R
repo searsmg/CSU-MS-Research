@@ -241,9 +241,9 @@ telr_hrsum <- mp4elr %>%
 #now model using degree day for T and rad
 
 #define params
-mft <- 1.588608537 #- 0.794304085
-tref <- 0
-mfr <- 0.146665342 #- 0.073332691
+mft <- 1.588608537 - 0.794304085
+tref <- 2.5
+mfr <- 0.146665342 - 0.073332691
 
 tobs_hrsum <- tobs_hrsum %>%
   mutate(melt = if_else(Tcum<=tref,mfr*radcum,
