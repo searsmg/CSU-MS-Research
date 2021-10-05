@@ -150,7 +150,7 @@ mp4obs <- mp4 %>%
 
 #model NR for MP4 using lapsed T from SNOTEL
 mp4elr <- mp4 %>%
-  mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>%
+  mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>% #playing with ELR
   mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
   mutate(ea = (humidity * esat)/100) %>%
   mutate(Cc_pt1 = avgLWin/((stef)*(Tlap+273.15)^4)) %>%
@@ -171,8 +171,8 @@ mp4obs <- mp4obs %>%
          tdif = AirT_C - mp4elr$Tlap)
 
 
-ggplot(mp4obs) + geom_line(aes(Datetime, LWnet), size=1) +
-  geom_line(aes(Datetime, lwdif), color="purple", size=1)
+ggplot(mp4obs) + geom_line(aes(Datetime, nrfix), size=1) +
+  geom_line(aes(Datetime, nrdif), color="purple", size=1)
 
 write.csv(mp4obs, "mp4obs.csv")
 write.csv(mp4elr, "mp4elr.csv")
