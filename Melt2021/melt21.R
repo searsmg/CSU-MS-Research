@@ -225,7 +225,7 @@ fsnow_plap <- fsnow_hr %>%
   group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
   summarize(fsnow = sum(freshsnow_mm)) %>%
   mutate(Date = as.Date(Date)) %>%
-  mutate(fsnow_fix = fsnow*10) #1.05056 is from liston and elder 2006
+  mutate(fsnow_fix = fsnow*1.05056) #1.05056 is from liston and elder 2006
 
 
 ########################################################
@@ -258,9 +258,9 @@ telr_hrsum <- mp4elr %>%
 #now model using degree day for T and rad
 
 #define params
-mft <- 1.588608537 # 0.794304085
-tref <- 0
-mfr <- 0.146665342 #- 0.073332691
+mft <- 0.8 #1.588608537 # 0.794304085
+tref <- -7
+mfr <- 0.005 #0.146665342 #- 0.073332691
 
 tobs_hrsum <- tobs_hrsum %>%
   mutate(melt = if_else(Tcum<=tref,mfr*radcum,
@@ -279,13 +279,13 @@ for(i in 2:nrow(tobs_hrsum)){
 
 #then add fresh snow in
 fsnow <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/JW21_melt.csv") %>%
-  mutate(Date = ymd(Date)) %>%
+  mutate(Date = mdy(Date)) %>%
   select(c(Date, freshsnow))
 
-tobs_hrsum <- merge(tobs_hrsum, fsnow, by="Date") #update later depending on fsnow
+tobs_hrsum <- merge(tobs_hrsum, fsnow_plap, by="Date") #update later depending on fsnow
 
 tobs_hrsum <- tobs_hrsum %>%
-  mutate(melt_fix = melt_cum + freshsnow)
+  mutate(melt_fix = melt_cum + fsnow)
 
 #write.csv(tobs_hrsum, "mf_mp4.csv")
 
@@ -308,10 +308,10 @@ for(i in 2:nrow(telr_hrsum)){
   }
 }
 
-telr_hrsum <- merge(telr_hrsum, fsnow, by="Date") #update fsnow
+telr_hrsum <- merge(telr_hrsum, fsnow_plap, by="Date") #update fsnow
 
 telr_hrsum <- telr_hrsum %>%
-  mutate(melt_fix = melt_cum + freshsnow)
+  mutate(melt_fix = melt_cum + fsnow)
 
 ggplot() + geom_line(data=telr_hrsum, aes(Date, melt_fix)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
@@ -323,12 +323,20 @@ tobs_hrsum <- tobs_hrsum %>%
 telr_hrsum <- telr_hrsum %>%
   filter(melt_cum > 0)
 
+# compare to daily JW SWE
+JW21_fil <- JW21_daily %>%
+  filter(Date > "2021-04-30")
+
 #plot the two to compare elr vs obs
 compare1 <- ggplot() + geom_line(data=tobs_hrsum, aes(Date, melt_fix)) +
   geom_point(data=swe17, aes(x=Date, y=SWE)) +
-  geom_line(data=telr_hrsum, aes(Date, melt_fix), color="purple")
+  geom_line(data=telr_hrsum, aes(Date, melt_fix), color="purple") +
+  geom_line(data=JW21_fil, aes(Date, SWE_mm), color="blue")
 
 ggplotly(compare1)
+
+
+
 compare1
 
 mp4_diff <- tobs_hrsum %>%
