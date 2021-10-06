@@ -168,11 +168,29 @@ mp4obs <- mp4obs %>%
   mutate(nrdif = nrfix - mp4elr$nrfix,
          swdif = SWnet - mp4elr$SWnet,
          lwdif = LWnet - mp4elr$LWnet,
-         tdif = AirT_C - mp4elr$Tlap)
+         tdif = AirT_C - mp4elr$Tlap) %>%
+  mutate(tcum_ob = cumsum(AirT_C),
+         tcum_lap = cumsum(mp4elr$Tlap),
+         nrcum_ob = cumsum(nrfix),
+         nrcum_lap = cumsum(mp4elr$nrfix),
+         tcum_obpos = ifelse(AirT_C>0, AirT_C, 0),
+         tcum_ob0 = cumsum(tcum_obpos),
+         tcum_lappos = ifelse(mp4elr$Tlap>0, mp4elr$Tlap, 0),
+         tcum_lap0 = cumsum(tcum_lappos))
 
 
-ggplot(mp4obs) + geom_line(aes(Datetime, nrfix), size=1) +
-  geom_line(aes(Datetime, nrdif), color="purple", size=1)
+ggplot(mp4obs) + geom_line(aes(Datetime, tcum_ob), size=1) +
+  geom_line(aes(Datetime, tcum_lap), color="purple", size=1) +
+  labs(y= "Cumulative T")
+
+ggplot(mp4obs) + geom_line(aes(Datetime, nrcum_ob), size=1) +
+  geom_line(aes(Datetime, nrcum_lap), color="purple", size=1) +
+  labs(y= "Cumulative NR")
+
+ggplot(mp4obs) + geom_line(aes(Datetime, tcum_ob0), size=1) +
+  geom_line(aes(Datetime, tcum_lap0), color="purple", size=1) +
+  labs(y= "Cumulative T > 0")
+
 
 write.csv(mp4obs, "mp4obs.csv")
 write.csv(mp4elr, "mp4elr.csv")
