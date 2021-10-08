@@ -215,15 +215,14 @@ swe17 <- read.csv("swe17.csv") %>%
 fsnow_hr <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/jwhr.csv") %>%
   mutate(Datetime=mdy_hm(Datetime))
 
-fsnow_test <- fsnow_hr %>%
-  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
-  summarize(fsnow = sum(freshsnow_mm)) %>%
-  mutate(Date = as.Date(Date))
+fsnow <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/JW21_melt.csv") %>%
+  mutate(Date = mdy(Date)) %>%
+  select(c(Date, freshsnow))
 
 #now try to apply fresh snow using modeled precip based on elevation from Liston and Elder 2006
 fsnow_plap <- fsnow_hr %>%
   group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
-  summarize(fsnow = sum(freshsnow_mm)) %>%
+  summarize(fsnow = sum(precip_mm)) %>%
   mutate(Date = as.Date(Date)) %>%
   mutate(fsnow_fix = fsnow*1.05056) #1.05056 is from liston and elder 2006
 
@@ -259,8 +258,8 @@ telr_hrsum <- mp4elr %>%
 
 #define params
 mft <- 1.588608537 # 0.794304085
-tref <- 5
-mfr <- 0.14 #0.146665342 #- 0.073332691
+tref <- 4
+mfr <- 0.1467 #0.146665342 #- 0.073332691
 
 tobs_hrsum <- tobs_hrsum %>%
   filter(Date > "2021-04-30") %>%
@@ -268,15 +267,7 @@ tobs_hrsum <- tobs_hrsum %>%
                         mft*(Tcum-tref)+mfr*radcum)) %>%
   mutate(melt = pmax(melt, 0))
 
-fsnow <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/JW21_melt.csv") %>%
-  mutate(Date = mdy(Date)) %>%
-  select(c(Date, freshsnow))
-
 tobs_hrsum <- merge(tobs_hrsum, fsnow_plap, by="Date") #update later depending on fsnow
-
-#tobs_hrsum <- tobs_hrsum %>%
-#  mutate(melt_fix = melt - fsnow_fix)
-  
 
 tobs_hrsum$swe_cum <- as.numeric(NA)
 tobs_hrsum[1,"swe_cum"] <- 644
@@ -287,9 +278,6 @@ for(i in 2:nrow(tobs_hrsum)){
     tobs_hrsum$swe_cum[i] = tobs_hrsum$swe_cum[i-1]+tobs_hrsum$fsnow_fix[i]-tobs_hrsum$melt[i]
   }
 }
-
-#obs_hrsum <- tobs_hrsum %>%
-#  filter(swe_cum > 0)
 
 ggplot() + geom_line(data=tobs_hrsum, aes(Date, swe_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
@@ -308,7 +296,7 @@ telr_hrsum[1,"swe_cum"] <- 644
 
 for(i in 2:nrow(telr_hrsum)){
   if(is.na(telr_hrsum$swe_cum[i])){
-    telr_hrsum$swe_cum[i] = telr_hrsum$swe_cum[i-1]+telr_hrsum$fsnow_fix-telr_hrsum$melt[i]
+    telr_hrsum$swe_cum[i] = telr_hrsum$swe_cum[i-1]+telr_hrsum$fsnow_fix[i]-telr_hrsum$melt[i]
   }
 }
 
@@ -329,8 +317,6 @@ compare1 <- ggplot() + geom_line(data=tobs_hrsum, aes(Date, swe_cum)) +
   #geom_line(data=JW21_fil, aes(Date, SWE_mm), color="blue")
 
 ggplotly(compare1)
-
-
 
 compare1
 
