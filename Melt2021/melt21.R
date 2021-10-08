@@ -258,80 +258,75 @@ telr_hrsum <- mp4elr %>%
 #now model using degree day for T and rad
 
 #define params
-mft <- 0.8 #1.588608537 # 0.794304085
-tref <- -7
-mfr <- 0.005 #0.146665342 #- 0.073332691
+mft <- 1.588608537 # 0.794304085
+tref <- 5
+mfr <- 0.14 #0.146665342 #- 0.073332691
 
 tobs_hrsum <- tobs_hrsum %>%
+  filter(Date > "2021-04-30") %>%
   mutate(melt = if_else(Tcum<=tref,mfr*radcum,
                         mft*(Tcum-tref)+mfr*radcum)) %>%
-  mutate(melt = pmax(melt, 0)) %>%
-  filter(Date > "2021-04-30")
+  mutate(melt = pmax(melt, 0))
 
-tobs_hrsum$melt_cum <- as.numeric(NA)
-tobs_hrsum[1,"melt_cum"] <- 644
-
-for(i in 2:nrow(tobs_hrsum)){
-  if(is.na(tobs_hrsum$melt_cum[i])){
-    tobs_hrsum$melt_cum[i] = tobs_hrsum$melt_cum[i-1]-tobs_hrsum$melt[i]
-  }
-}
-
-#then add fresh snow in
 fsnow <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/JW21_melt.csv") %>%
   mutate(Date = mdy(Date)) %>%
   select(c(Date, freshsnow))
 
 tobs_hrsum <- merge(tobs_hrsum, fsnow_plap, by="Date") #update later depending on fsnow
 
-tobs_hrsum <- tobs_hrsum %>%
-  mutate(melt_fix = melt_cum + fsnow)
+#tobs_hrsum <- tobs_hrsum %>%
+#  mutate(melt_fix = melt - fsnow_fix)
+  
 
-#write.csv(tobs_hrsum, "mf_mp4.csv")
+tobs_hrsum$swe_cum <- as.numeric(NA)
+tobs_hrsum[1,"swe_cum"] <- 644
+#tobs_hrsum$fsnow_fix <- tobs_hrsum$freshsnow*1.5056
 
-ggplot() + geom_line(data=tobs_hrsum, aes(Date, melt_fix)) +
+for(i in 2:nrow(tobs_hrsum)){
+  if(is.na(tobs_hrsum$swe_cum[i])){
+    tobs_hrsum$swe_cum[i] = tobs_hrsum$swe_cum[i-1]+tobs_hrsum$fsnow_fix[i]-tobs_hrsum$melt[i]
+  }
+}
+
+#obs_hrsum <- tobs_hrsum %>%
+#  filter(swe_cum > 0)
+
+ggplot() + geom_line(data=tobs_hrsum, aes(Date, swe_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
 
 ##elr model
 telr_hrsum <- telr_hrsum %>%
+  filter(Date > "2021-04-30") %>%
   mutate(melt = if_else(Tcum<=tref,mfr*radcum,
                         mft*(Tcum-tref)+mfr*radcum)) %>%
-  mutate(melt = pmax(melt, 0)) %>%
-  filter(Date > "2021-04-30")
+  mutate(melt = pmax(melt, 0))
 
-telr_hrsum$melt_cum <- as.numeric(NA)
-telr_hrsum[1,"melt_cum"] <- 644
+telr_hrsum <- merge(telr_hrsum, fsnow_plap, by="Date") #update fsno
+
+telr_hrsum$swe_cum <- as.numeric(NA)
+telr_hrsum[1,"swe_cum"] <- 644
 
 for(i in 2:nrow(telr_hrsum)){
-  if(is.na(telr_hrsum$melt_cum[i])){
-    telr_hrsum$melt_cum[i] = telr_hrsum$melt_cum[i-1]-telr_hrsum$melt[i]
+  if(is.na(telr_hrsum$swe_cum[i])){
+    telr_hrsum$swe_cum[i] = telr_hrsum$swe_cum[i-1]+telr_hrsum$fsnow_fix-telr_hrsum$melt[i]
   }
 }
 
-telr_hrsum <- merge(telr_hrsum, fsnow_plap, by="Date") #update fsnow
-
-telr_hrsum <- telr_hrsum %>%
-  mutate(melt_fix = melt_cum + fsnow)
-
-ggplot() + geom_line(data=telr_hrsum, aes(Date, melt_fix)) +
+ggplot() + geom_line(data=telr_hrsum, aes(Date, swe_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
 
 #filter so melt does not go negative 
 tobs_hrsum <- tobs_hrsum %>%
-  filter(melt_cum > 0)
+  filter(swe_cum > 0)
 
 telr_hrsum <- telr_hrsum %>%
-  filter(melt_cum > 0)
-
-# compare to daily JW SWE
-JW21_fil <- JW21_daily %>%
-  filter(Date > "2021-04-30")
+  filter(swe_cum > 0)
 
 #plot the two to compare elr vs obs
-compare1 <- ggplot() + geom_line(data=tobs_hrsum, aes(Date, melt_fix)) +
+compare1 <- ggplot() + geom_line(data=tobs_hrsum, aes(Date, swe_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE)) +
-  geom_line(data=telr_hrsum, aes(Date, melt_fix), color="purple") +
-  geom_line(data=JW21_fil, aes(Date, SWE_mm), color="blue")
+  geom_line(data=telr_hrsum, aes(Date, swe_cum), color="purple")# +
+  #geom_line(data=JW21_fil, aes(Date, SWE_mm), color="blue")
 
 ggplotly(compare1)
 
