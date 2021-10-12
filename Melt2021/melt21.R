@@ -13,6 +13,20 @@ rm(list = ls())
 #set working directory and csv file
 setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/For R/2021")
 
+PlotFormat = theme(axis.text=element_text(size=16, color="black"),
+                   axis.title.x=element_text(size=18, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+                   axis.title.y=element_text(size=18, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+                   plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
+                   legend.title=element_text(size=16, color="black"),                                                                    
+                   legend.text=element_text(size=16, color="black"),                                                                   
+                   legend.position = "right", 
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   axis.line = element_line(colour = "black"),
+                   strip.text = element_text(size=25))
+
+
 ##########################################################################
 #### PROCESSING ####
 
@@ -257,9 +271,9 @@ telr_hrsum <- mp4elr %>%
 #now model using degree day for T and rad
 
 #define params
-mft <- 1.588608537 # 0.794304085
-tref <- 4
-mfr <- 0.1467 #0.146665342 #- 0.073332691
+mft <- 1.5 #1.588608537
+tref <- 3
+mfr <- 0.1 #0.146665342
 
 tobs_hrsum <- tobs_hrsum %>%
   filter(Date > "2021-04-30") %>%
@@ -311,34 +325,18 @@ telr_hrsum <- telr_hrsum %>%
   filter(swe_cum > 0)
 
 #plot the two to compare elr vs obs
-compare1 <- ggplot() + geom_line(data=tobs_hrsum, aes(Date, swe_cum)) +
-  geom_point(data=swe17, aes(x=Date, y=SWE)) +
-  geom_line(data=telr_hrsum, aes(Date, swe_cum), color="purple")# +
-  #geom_line(data=JW21_fil, aes(Date, SWE_mm), color="blue")
+PLOT = "Base vs ELR+obvp"
+compare <- ggplot() + geom_line(data=tobs_hrsum, aes(Date, swe_cum), size=1) +
+  geom_line(data=telr_hrsum, aes(Date, swe_cum), color="purple", size=1) +
+  geom_point(data=swe17, aes(x=Date, y=SWE), shape="triangle", size=2) +
+  theme_bw() +
+  PlotFormat +
+  labs(x="", y="SWE (mm)") +
+  scale_y_continuous(breaks=seq(0, 700, 100)) 
+  
+ggplotly(compare)
+compare
 
-ggplotly(compare1)
 
-compare1
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
-mp4_diff <- tobs_hrsum %>%
-  filter(Date < "2021-06-02") %>%
-  mutate(Obs_ELR = melt_fix - telr_hrsum$melt_fix,
-         ELR_Obs = telr_hrsum$melt_fix - melt_fix)
-
-ggplot(mp4_diff) + geom_line(aes(Date, Obs_ELR)) +
-  geom_line(aes(Date, ELR_Obs), color="purple")
-
-#############################################################################
-#trying to get site specific melt factors for mp4 
-#DOESN'T WORK SO COMMENTED OUT
-
-#need avg daily rad and temp
-#ssmf <- mp4obs %>%
-#  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
-#  summarize(avgt = mean(AirT_C),
-#            avgr = mean(nrfix)) %>%
-#  mutate(Date = as.Date(Date))
-
-#ssmf <- merge(ssmf, fsnow, by="Date")
-#write.csv(ssmf, "ssmf.csv")
-############################################################
