@@ -100,5 +100,3 @@ ggplot(JW21_melt_test)+geom_point(aes(x=melt_obs_cum, y=melt_mod_cum))+
   geom_abline(intercept = 0, slope = 1, size=1.5, color="red")
 
 NSE(JW21_melt_test$melt_mod_cum, JW21_melt_test$melt_obs_cum)
-
-
