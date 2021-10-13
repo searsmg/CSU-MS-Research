@@ -19,18 +19,22 @@ rad21 <- read.csv(file="Rad_melt21.csv",
   mutate(Datetime = mdy_hm(Datetime))
 
 #pull in hourly SNOTEL data for precip
-JW21daily <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "daily", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
-  mutate(Date = ymd(Date))
+#JW21daily <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "daily", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
+#  mutate(Date = ymd(Date))
+
+JW21daily <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/dailyjw.csv") %>%
+  mutate(Date = mdy(Date))
 
 ############################################################################
 
+#getting albedo. min equals 0.5 since we are only modeling for when there is snow
 JW21_al <- JW21daily %>%
-  rename(Ta_F = Air.Temperature.Average..degF., 
-         precip_accum_in = Precipitation.Accumulation..in..Start.of.Day.Values,
-         Sd_in = Snow.Depth..in..Start.of.Day.Values,
-         SWE_in = Snow.Water.Equivalent..in..Start.of.Day.Values) %>%
-  select(-c(Air.Temperature.Maximum..degF., Air.Temperature.Minimum..degF.,
-            Air.Temperature.Observed..degF..Start.of.Day.Values)) %>%
+#  rename(Ta_F = Air.Temperature.Average..degF., 
+#         precip_accum_in = Precipitation.Accumulation..in..Start.of.Day.Values,
+#         Sd_in = Snow.Depth..in..Start.of.Day.Values,
+#         SWE_in = Snow.Water.Equivalent..in..Start.of.Day.Values) %>%
+#  select(-c(Air.Temperature.Maximum..degF., Air.Temperature.Minimum..degF.,
+#            Air.Temperature.Observed..degF..Start.of.Day.Values)) %>%
   mutate(Ta_C = (Ta_F-32)*(5/9),
          PrecipAcum_mm = precip_accum_in*25.4,
          Sd_mm = Sd_in*25.4,
@@ -104,13 +108,16 @@ RH_dewpt <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research
   mutate(Datetime = mdy_hm(Datetime))
 
 #need to bring in hourly SNOTEL temp for ELR
-JW21_temphr <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
-  mutate(Datetime = ymd_hm(Date))
+#JW21_temphr <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "hourly", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
+#  mutate(Datetime = ymd_hm(Date))
+
+#bring in JW hrly for temp
+JW21_temphr <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/jwhr.csv") %>%
+  mutate(Datetime = mdy_hm(Datetime))
 
 #get it into deg C from hourly SNOTEL
 jwtemp <- JW21_temphr %>%
-  rename(Tjw = Air.Temperature.Observed..degF.) %>%
-  mutate(Tjw = (Tjw-32)*(5/9)) %>%
+#  rename(Tjw = Air.Temperature.Observed..degF.) %>%
   select(c(Datetime, Tjw))
 
 #add jwtemp to the JWrad_hr data
@@ -128,15 +135,38 @@ mp4 <- merge(mp4_rh, mp4, by="Datetime")
 #get rid of :01 on mp4 time
 minute(mp4$Datetime) <- 0
 
-stef <- 5.67 * 10^-8
-
 mp4 <- mp4 %>%
   select(-c(ID.x, ID.y, Elevation, Band))
 
-mp4 <- merge(mp4, JWrad_hr, "Datetime")
+#need HD1 RH and Ta for varying saturated vap press
+hd1 <- temp_elev_21 %>%
+  filter(ID == "HD1")
+
+hd1_rh <- RH_dewpt %>%
+  filter(ID == "HD1")
+
+hd1 <- merge(hd1_rh, hd1, by="Datetime")
+
+#get rid of :01 on mp4 time
+minute(hd1$Datetime) <- 0
+
+#rename columns so when merged with mp4
+hd1 <- hd1 %>%
+  select(-c(ID.x, ID.y, Elevation, Band)) %>%
+  rename(HD1rh = humidity,
+         HD1ta = AirT_C,
+         HD1td = dewpoint)
+
+#add HD1 data to mp4
+mp4 <- merge(mp4, hd1, "Datetime")
+
+#merge mp4 (plus HD1) with jw rad data by hr
+mp4 <- merge(mp4, JWrad_hr, "Datetime")  
+  
+stef <- 5.67 * 10^-8 #stef boltz constant
 
 #model NR for MP4 using obs T
-mp4obs <- mp4 %>%
+mp4a <- mp4 %>%
   mutate(esat = (6.112*exp((17.62*AirT_C)/(243.12+AirT_C)))) %>%
   mutate(ea = (humidity * esat)/100) %>%
   mutate(Cc_pt1 = avgLWin/((stef)*(AirT_C+273.15)^4)) %>%
@@ -149,7 +179,35 @@ mp4obs <- mp4 %>%
   mutate(LWnet = Lwin_fix - avgLWout)
 
 #model NR for MP4 using lapsed T from SNOTEL
-mp4elr <- mp4 %>%
+mp4b <- mp4 %>%
+  mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>% #playing with ELR
+  mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
+  mutate(ea = (humidity * esat)/100) %>%
+  mutate(Cc_pt1 = avgLWin/((stef)*(Tlap+273.15)^4)) %>%
+  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
+  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
+  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
+  mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
+  select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
+  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(LWnet = Lwin_fix - avgLWout)
+
+#model NR for MP4 using lapsed T from SNOTEL
+mp4c <- mp4 %>%
+  mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>% #playing with ELR
+  mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
+  mutate(ea = (humidity * esat)/100) %>%
+  mutate(Cc_pt1 = avgLWin/((stef)*(Tlap+273.15)^4)) %>%
+  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
+  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
+  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
+  mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
+  select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
+  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(LWnet = Lwin_fix - avgLWout)
+
+#model NR for MP4 using lapsed T from SNOTEL
+mp4bd<- mp4 %>%
   mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>% #playing with ELR
   mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
   mutate(ea = (humidity * esat)/100) %>%
