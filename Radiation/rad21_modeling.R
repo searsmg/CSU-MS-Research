@@ -165,7 +165,7 @@ mp4 <- merge(mp4, JWrad_hr, "Datetime")
   
 stef <- 5.67 * 10^-8 #stef boltz constant
 
-#model NR for MP4 using obs T
+#model NR for MP4 using obs T and obs ea
 mp4a <- mp4 %>%
   mutate(esat = (6.112*exp((17.62*AirT_C)/(243.12+AirT_C)))) %>%
   mutate(ea = (humidity * esat)/100) %>%
@@ -178,9 +178,9 @@ mp4a <- mp4 %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout)
 
-#model NR for MP4 using lapsed T from SNOTEL
+#model NR for MP4 using Ta lapse (ELR) and obs ea
 mp4b <- mp4 %>%
-  mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>% #playing with ELR
+  mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>% 
   mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
   mutate(ea = (humidity * esat)/100) %>%
   mutate(Cc_pt1 = avgLWin/((stef)*(Tlap+273.15)^4)) %>%
@@ -192,9 +192,37 @@ mp4b <- mp4 %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout)
 
-#model NR for MP4 using lapsed T from SNOTEL
+#model NR for MP4 using Ta lapse (L&E) and obs ea
+mp4bb <- mp4 %>%
+  mutate(Tlap = Tjw+(-0.00815*(3197.48-3089.86))) %>% 
+  mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
+  mutate(ea = (humidity * esat)/100) %>%
+  mutate(Cc_pt1 = avgLWin/((stef)*(Tlap+273.15)^4)) %>%
+  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
+  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
+  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
+  mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
+  select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
+  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(LWnet = Lwin_fix - avgLWout)
+
+#model NR for MP4 using obs T and ea lapse (L&E)
 mp4c <- mp4 %>%
-  mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>% #playing with ELR
+  mutate(esat = (6.112*exp((17.62*HD1ta)/(243.12+HD1ta)))) %>%
+  mutate(Tdlap = HD1td+(-0.0051*(3197.48-3059.04))) %>%
+  mutate(ea = Tdlap*esat) %>%
+  mutate(Cc_pt1 = avgLWin/((stef)*(HD1ta+273.15)^4)) %>%
+  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
+  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
+  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
+  mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((HD1ta+273.15)^4)) %>%
+  select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
+  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(LWnet = Lwin_fix - avgLWout)
+
+#model NR for MP4 using lapse T (elr or l&e) and obs ea
+mp4d<- mp4 %>%
+  mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>%
   mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
   mutate(ea = (humidity * esat)/100) %>%
   mutate(Cc_pt1 = avgLWin/((stef)*(Tlap+273.15)^4)) %>%
@@ -206,19 +234,13 @@ mp4c <- mp4 %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout)
 
-#model NR for MP4 using lapsed T from SNOTEL
-mp4bd<- mp4 %>%
-  mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>% #playing with ELR
-  mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
-  mutate(ea = (humidity * esat)/100) %>%
-  mutate(Cc_pt1 = avgLWin/((stef)*(Tlap+273.15)^4)) %>%
-  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
-  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
-  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
-  mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
-  select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
-  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
-  mutate(LWnet = Lwin_fix - avgLWout)
+#write all the results for Ta, ea, and rad to CSVs
+write.csv(mp4a, "mp4a.csv")
+write.csv(mp4b, "mp4b.csv")
+write.csv(mp4bb, "mp4bb.csv")
+write.csv(mp4c, "mp4c.csv")
+write.csv(mp4d, "mp4d.csv")
+write.csv(JWrad_hr, "JWrad_hr.csv")
 
 #make plots showing the diff between obs and elr rad data and TEMP
 #first, get the diff between obs and elr
@@ -248,10 +270,3 @@ ggplot(mp4obs) + geom_line(aes(Datetime, nrcum_ob), size=1) +
 ggplot(mp4obs) + geom_line(aes(Datetime, tcum_ob0), size=1) +
   geom_line(aes(Datetime, tcum_lap0), color="purple", size=1) +
   labs(y= "Cumulative T > 0")
-
-
-write.csv(mp4obs, "mp4obs.csv")
-write.csv(mp4elr, "mp4elr.csv")
-write.csv(JWrad_hr, "JWrad_hr.csv")
-
-
