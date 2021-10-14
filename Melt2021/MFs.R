@@ -22,7 +22,7 @@ rad21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Th
 
 ######################################################
 #pull in daily SNOTEL data -- THIS IS DAILY
-JW21_daily <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "daily", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
+JW21_daily <- grabNRCS.data(network = "SNTL", site_id = "551", timescale = "daily", DayBgn = '2021-04-01', DayEnd = '2021-07-01') %>%
   mutate(Date = ymd(Date))
 
 JW21_daily <- JW21_daily %>%
