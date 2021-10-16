@@ -19,9 +19,20 @@ PLOT = "JW SNOTEL dens over time"
 ggplot(data = subset(JW21_sno, !is.na(dens)), aes(x=Date, y=dens))+
   geom_line() + scale_x_date(date_breaks = "1 month")
 
+#######################################################################################
+#above was comparing density to observed density
+#below is looking at historical jw snotel data
+
+#set working directory
+setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL")
+
 #pull all JW SNOTEL data 
-JWall_sno <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "daily", DayBgn = '1978-10-01', DayEnd = '2020-09-30') %>%
-  mutate(Date = ymd(Date))
+#JWall_sno <- grabNRCS.data(network = "SNTL", site_id = 551, timescale = "daily", DayBgn = '1978-10-01', DayEnd = '2020-09-30') %>%
+#  mutate(Date = ymd(Date))
+
+#above code is not working anymore so pulling in a csv of that data
+JWall_sno <- read.csv("hist_jw.csv") %>%
+  mutate(Date = mdy(Date))
 
 JWall_sno <- addWaterYear(JWall_sno)
 
@@ -55,7 +66,7 @@ meltout <- JWall_sno %>%
   mutate(month = month(Date)) %>%
   filter(between(month, 4,7)) %>%
   group_by(waterYear) %>%
-  filter(SWE_in == min(SWE_in)) %>%
+  filter(Snow.Water.Equivalent..in..Start.of.Day.Values == min(Snow.Water.Equivalent..in..Start.of.Day.Values)) %>%
   slice(1) %>%
   ungroup()
 
