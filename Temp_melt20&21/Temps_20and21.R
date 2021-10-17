@@ -303,3 +303,20 @@ ggplot(slope_side, aes(x=Datetime, y=Slope_km)) +
   geom_hline(aes(yintercept=-0))
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+
+sideslope <- rbind(slope_20side, slope_21side)
+
+avg_sides <- sideslope %>%
+  group_by(side) %>%
+  summarize(avgslope = mean(Slope_km, na.rm=T),
+         avgr2 = mean(R2, na.rm=T),
+         Ssd = sd(Slope_km, na.rm=T),
+         Rsd = sd(R2, na.rm=T))
+
+avg_sides_yr <- sideslope %>%
+  group_by(side, year) %>%
+  summarize(avgslope = mean(Slope_km, na.rm=T),
+            avgr2 = mean(R2, na.rm=T),
+            Ssd = sd(Slope_km, na.rm=T),
+            Rsd = sd(R2, na.rm=T))
