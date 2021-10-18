@@ -10,6 +10,8 @@ library(tidyverse)
 library(RNRCS)
 library(esquisse)
 
+rm(list = ls())
+
 #set working directory and csv file
 setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R")
 
@@ -69,7 +71,9 @@ rad_hr <- rad21 %>%
   group_by(dt_agg) %>%
   summarize(avgSWin = mean(Swin),
             avgLWin = mean(Lwin),
-            avgLWout = mean(Lwout)) #%>%
+            avgLWout = mean(Lwout),
+            Ta = mean(Ta_C),
+            RH = mean(RH)) #%>%
 #  mutate(Datetime = ymd_hm(Datetime))
 
 #get actual_al from day to hourly - assume albedo is constant through day
@@ -90,8 +94,20 @@ JWrad_hr <- JWrad_hr %>%
   mutate(SWnet = avgSWin*(1-actual_al),
          LWnet = avgLWin-avgLWout) %>%
   mutate(nr = SWnet+LWnet) %>%
-  select(c(dt_agg, avgSWin, SWnet, avgLWin, avgLWout, LWnet, nr)) %>%
+  select(c(dt_agg, avgSWin, SWnet, avgLWin, avgLWout, LWnet, nr, Ta, RH)) %>%
   rename(Datetime = dt_agg)
+
+stef <- 5.67 * 10^-8 #stef boltz constant
+
+# model CC in the JWrad_hr. Apply CC to all models plus calibration using SNOTEL
+JWrad_hr <- JWrad_hr %>%
+  mutate(esat = (6.112*exp((17.62*Ta)/(243.12+Ta)))) %>%
+  mutate(ea = (RH * esat)/100) %>%
+  mutate(Cc_pt1 = avgLWin/((stef)*(Ta+273.15)^4)) %>%
+  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
+  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
+  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
+  select(-c(esat, ea, Cc_pt1, Cc_pt2, Cc))
 
 ggplot(JWrad_hr)+geom_line(aes(Datetime,nr)) +
   geom_line(aes(Datetime, avgSWin), color="purple") +
@@ -122,6 +138,8 @@ jwtemp <- JW21_temphr %>%
 
 #add jwtemp to the JWrad_hr data
 JWrad_hr <- merge(jwtemp, JWrad_hr, by="Datetime")
+
+write.csv(JWrad_hr, "JWrad_hr.csv") # use this in the MF script as well
 
 #next several lines are pulling mp4 then merging  back w/ rad data
 mp4 <- temp_elev_21 %>%
@@ -162,19 +180,12 @@ mp4 <- merge(mp4, hd1, "Datetime")
 
 #merge mp4 (plus HD1) with jw rad data by hr
 mp4 <- merge(mp4, JWrad_hr, "Datetime")  
-  
-stef <- 5.67 * 10^-8 #stef boltz constant
 
 #model NR for MP4 using obs T and obs ea
 mp4a <- mp4 %>%
   mutate(esat = (6.112*exp((17.62*AirT_C)/(243.12+AirT_C)))) %>%
-  mutate(ea = (humidity * esat)/100) %>%
-  mutate(Cc_pt1 = avgLWin/((stef)*(AirT_C+273.15)^4)) %>%
-  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
-  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
-  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
+  mutate(ea = esat*Td) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((AirT_C+273.15)^4)) %>%
-  select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout) %>%
   mutate(tcum_pos = ifelse(AirT_C > 3, AirT_C, 0),
@@ -261,7 +272,6 @@ write.csv(mp4b, "mp4b.csv")
 write.csv(mp4bb, "mp4bb.csv")
 write.csv(mp4c, "mp4c.csv")
 write.csv(mp4d, "mp4d.csv")
-write.csv(JWrad_hr, "JWrad_hr.csv")
 
 ############################################################################
 #now for plotting T and NR for each model scenario
