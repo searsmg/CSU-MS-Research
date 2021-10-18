@@ -179,48 +179,48 @@ mp4 <- merge(mp4, JWrad_hr, "Datetime")
 mp4a <- mp4 %>%
   mutate(ea = (6.112*exp((17.62*dewpoint)/(243.12+dewpoint)))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((AirT_C+273.15)^4)) %>%
-  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(nrfix_a = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout) %>%
-  mutate(tcum_pos = ifelse(AirT_C > 4.58, AirT_C, 0),
-         tcum_a = cumsum(tcum_pos),
-         nrcum_a = cumsum(nrfix)) %>%
-  select(c(Datetime, tcum_a, nrcum_a))
+  mutate(tpos_a = ifelse(AirT_C > 4.58, AirT_C, 0),
+         tcum_a = cumsum(tpos_a),
+         nrcum_a = cumsum(nrfix_a)) %>%
+  select(c(Datetime, tcum_a, nrcum_a, nrfix_a, tpos_a))
 
 #model NR for MP4 using Ta lapse (ELR) and obs ea
 mp4b1 <- mp4 %>%
   mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>% 
   mutate(ea = (6.112*exp((17.62*dewpoint)/(243.12+dewpoint)))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
-  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(nrfix_b1 = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout) %>%
-  mutate(tcum_pos = ifelse(Tlap > 4.58, Tlap, 0),
-         tcum_b1 = cumsum(tcum_pos),
-         nrcum_b1 = cumsum(nrfix)) %>%
-  select(c(tcum_b1, nrcum_b1))
+  mutate(tpos_b1 = ifelse(Tlap > 4.58, Tlap, 0),
+         tcum_b1 = cumsum(tpos_b1),
+         nrcum_b1 = cumsum(nrfix_b1)) %>%
+  select(c(Datetime, tcum_b1, nrcum_b1, nrfix_b1, tpos_b1))
 
 #model NR for MP4 using Ta lapse (L&E) and obs ea
 mp4b2 <- mp4 %>%
   mutate(Tlap = Tjw+(-0.00815*(3197.48-3089.86))) %>% 
   mutate(ea = (6.112*exp((17.62*dewpoint)/(243.12+dewpoint)))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
-  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(nrfix_b2 = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout) %>%
-  mutate(tcum_pos = ifelse(Tlap > 4.58, Tlap, 0),
-         tcum_b2 = cumsum(tcum_pos),
-         nrcum_b2 = cumsum(nrfix)) %>%
-  select(c(tcum_b2, nrcum_b2))
+  mutate(tpos_b2 = ifelse(Tlap > 4.58, Tlap, 0),
+         tcum_b2 = cumsum(tpos_b2),
+         nrcum_b2 = cumsum(nrfix_b2)) %>%
+  select(c(Datetime, tcum_b2, nrcum_b2, tpos_b2, nrfix_b2))
 
 #model NR for MP4 using obs T and ea lapse (L&E)
 mp4c <- mp4 %>%
   mutate(Tdlap = mp2td+(-0.0051*(3197.48-3092.27))) %>%
   mutate(ea = (6.112*exp((17.62*Tdlap)/(243.12+Tdlap)))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((AirT_C+273.15)^4)) %>%
-  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(nrfix_c = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout) %>%
-  mutate(tcum_pos = ifelse(AirT_C > 4.58, AirT_C, 0),
-         tcum_c = cumsum(tcum_pos),
-         nrcum_c = cumsum(nrfix)) %>%
-  select(c(tcum_c, nrcum_c))
+  mutate(tpos_c = ifelse(AirT_C > 4.58, AirT_C, 0),
+         tcum_c = cumsum(tpos_c),
+         nrcum_c = cumsum(nrfix_c)) %>%
+  select(c(Datetime, tcum_c, nrcum_c, tpos_c, nrfix_c))
 
 #model NR for MP4 using lapse T (elr or l&e) and obs ea
 mp4d<- mp4 %>%
@@ -228,17 +228,17 @@ mp4d<- mp4 %>%
   mutate(Tdlap = mp2td+(-0.0051*(3197.48-3092.27))) %>%
   mutate(ea = (6.112*exp((17.62*Tdlap)/(243.12+Tdlap)))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
-  mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
+  mutate(nrfix_d = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout) %>%
-  mutate(tcum_pos = ifelse(Tlap > 4.58, Tlap, 0),
-         tcum_d = cumsum(tcum_pos),
-         nrcum_d = cumsum(nrfix)) %>%
-  select(c(tcum_d, nrcum_d))
+  mutate(tpos_d = ifelse(Tlap > 4.58, Tlap, 0),
+         tcum_d = cumsum(tpos_d),
+         nrcum_d = cumsum(nrfix_d)) %>%
+  select(c(Datetime, tcum_d, nrcum_d, tpos_d, nrfix_d))
 
 #write all the results for Ta, ea, and rad to CSVs
 write.csv(mp4a, "mp4a.csv")
-write.csv(mp4b1, "mp4b.csv")
-write.csv(mp4b2, "mp4bb.csv")
+write.csv(mp4b1, "mp4b1.csv")
+write.csv(mp4b2, "mp4b2.csv")
 write.csv(mp4c, "mp4c.csv")
 write.csv(mp4d, "mp4d.csv")
 
@@ -247,6 +247,8 @@ write.csv(mp4d, "mp4d.csv")
 
 #need Tcum and NRcum for each scenario
 allmod <- cbind(mp4a, mp4b1, mp4b2, mp4c, mp4d)
+
+allmod <- allmod[-c(6,11,16,21)]
 
 ggplot(allmod, aes(x=Datetime)) +
   geom_line(aes(y=tcum_a), color="black") +
