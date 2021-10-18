@@ -91,10 +91,8 @@ JWrad_hr <- merge(al_hr, rad_hr, by="doy")
 
 JWrad_hr <- JWrad_hr %>%
   mutate(avgLWout = if_else(avgLWout > 315.64, 315.64, avgLWout)) %>%
-  mutate(SWnet = avgSWin*(1-actual_al),
-         LWnet = avgLWin-avgLWout) %>%
-  mutate(nr = SWnet+LWnet) %>%
-  select(c(dt_agg, avgSWin, SWnet, avgLWin, avgLWout, LWnet, nr, Ta, RH)) %>%
+  mutate(SWnet = avgSWin*(1-actual_al)) %>%
+  select(c(dt_agg, avgSWin, SWnet, avgLWin, avgLWout, Ta, RH)) %>%
   rename(Datetime = dt_agg)
 
 stef <- 5.67 * 10^-8 #stef boltz constant
@@ -108,10 +106,6 @@ JWrad_hr <- JWrad_hr %>%
   mutate(Cc = (Cc_pt2 -1)/0.4) %>%
   mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
   select(-c(esat, ea, Cc_pt1, Cc_pt2, Cc))
-
-ggplot(JWrad_hr)+geom_line(aes(Datetime,nr)) +
-  geom_line(aes(Datetime, avgSWin), color="purple") +
-  geom_line(aes(Datetime, nr), color="red")
 
 ####################################################################
 #model LWin for MP4 so bring in MP4 data
@@ -139,7 +133,7 @@ jwtemp <- JW21_temphr %>%
 #add jwtemp to the JWrad_hr data
 JWrad_hr <- merge(jwtemp, JWrad_hr, by="Datetime")
 
-write.csv(JWrad_hr, "JWrad_hr.csv") # use this in the MF script as well
+#write.csv(JWrad_hr, "JWrad_hr.csv") # use this in the MF script as well
 
 #next several lines are pulling mp4 then merging  back w/ rad data
 mp4 <- temp_elev_21 %>%
@@ -157,119 +151,94 @@ mp4 <- mp4 %>%
   select(-c(ID.x, ID.y, Elevation, Band))
 
 #need HD1 RH and Ta for varying saturated vap press
-hd1 <- temp_elev_21 %>%
-  filter(ID == "HD1")
+mp2 <- temp_elev_21 %>%
+  filter(ID == "MP2")
 
-hd1_rh <- RH_dewpt %>%
-  filter(ID == "HD1")
+mp2_rh <- RH_dewpt %>%
+  filter(ID == "MP2")
 
-hd1 <- merge(hd1_rh, hd1, by="Datetime")
+mp2 <- merge(mp2_rh, mp2, by="Datetime")
 
 #get rid of :01 on mp4 time
-minute(hd1$Datetime) <- 0
+minute(mp2$Datetime) <- 0
 
 #rename columns so when merged with mp4
-hd1 <- hd1 %>%
+mp2 <- mp2 %>%
   select(-c(ID.x, ID.y, Elevation, Band)) %>%
-  rename(HD1rh = humidity,
-         HD1ta = AirT_C,
-         HD1td = dewpoint)
+  rename(mp2rh = humidity,
+         mp2ta = AirT_C,
+         mp2td = dewpoint)
 
-#add HD1 data to mp4
-mp4 <- merge(mp4, hd1, "Datetime")
+#add mp2 data to mp4
+mp4 <- merge(mp4, mp2, "Datetime")
 
 #merge mp4 (plus HD1) with jw rad data by hr
 mp4 <- merge(mp4, JWrad_hr, "Datetime")  
 
 #model NR for MP4 using obs T and obs ea
 mp4a <- mp4 %>%
-  mutate(esat = (6.112*exp((17.62*AirT_C)/(243.12+AirT_C)))) %>%
-  mutate(ea = esat*Td) %>%
+  mutate(ea = (6.112*exp((17.62*dewpoint)/(243.12+dewpoint)))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((AirT_C+273.15)^4)) %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout) %>%
-  mutate(tcum_pos = ifelse(AirT_C > 3, AirT_C, 0),
+  mutate(tcum_pos = ifelse(AirT_C > 4.58, AirT_C, 0),
          tcum_a = cumsum(tcum_pos),
          nrcum_a = cumsum(nrfix)) %>%
   select(c(Datetime, tcum_a, nrcum_a))
 
 #model NR for MP4 using Ta lapse (ELR) and obs ea
-mp4b <- mp4 %>%
+mp4b1 <- mp4 %>%
   mutate(Tlap = Tjw+(-0.0065*(3197.48-3089.86))) %>% 
-  mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
-  mutate(ea = (humidity * esat)/100) %>%
-  mutate(Cc_pt1 = avgLWin/((stef)*(Tlap+273.15)^4)) %>%
-  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
-  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
-  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
+  mutate(ea = (6.112*exp((17.62*dewpoint)/(243.12+dewpoint)))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
-  select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout) %>%
-  mutate(tcum_pos = ifelse(Tlap > 3, Tlap, 0),
-         tcum_b = cumsum(tcum_pos),
-         nrcum_b = cumsum(nrfix)) %>%
-  select(c(tcum_b, nrcum_b))
+  mutate(tcum_pos = ifelse(Tlap > 4.58, Tlap, 0),
+         tcum_b1 = cumsum(tcum_pos),
+         nrcum_b1 = cumsum(nrfix)) %>%
+  select(c(tcum_b1, nrcum_b1))
 
 #model NR for MP4 using Ta lapse (L&E) and obs ea
-mp4bb <- mp4 %>%
+mp4b2 <- mp4 %>%
   mutate(Tlap = Tjw+(-0.00815*(3197.48-3089.86))) %>% 
-  mutate(esat = (6.112*exp((17.62*Tlap)/(243.12+Tlap)))) %>%
-  mutate(ea = (humidity * esat)/100) %>%
-  mutate(Cc_pt1 = avgLWin/((stef)*(Tlap+273.15)^4)) %>%
-  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
-  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
-  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
+  mutate(ea = (6.112*exp((17.62*dewpoint)/(243.12+dewpoint)))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
-  select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
-  mutate(LWnet = Lwin_fix - avgLWout) %>% 
-  mutate(tcum_pos = ifelse(Tlap > 3, Tlap, 0),
-         tcum_bb = cumsum(tcum_pos),
-         nrcum_bb = cumsum(nrfix)) %>%
-  select(c(tcum_bb, nrcum_bb))
+  mutate(LWnet = Lwin_fix - avgLWout) %>%
+  mutate(tcum_pos = ifelse(Tlap > 4.58, Tlap, 0),
+         tcum_b2 = cumsum(tcum_pos),
+         nrcum_b2 = cumsum(nrfix)) %>%
+  select(c(tcum_b2, nrcum_b2))
 
 #model NR for MP4 using obs T and ea lapse (L&E)
 mp4c <- mp4 %>%
-  mutate(Tdlap = HD1td+(-0.0051*(3197.48-3059.04))) %>%
-  mutate(esat = (6.112*exp((17.62*Tdlap)/(243.12+Tdlap)))) %>%
-  mutate(ea = (humidity * esat)/100) %>%
-  mutate(Cc_pt1 = avgLWin/((stef)*(AirT_C+273.15)^4)) %>%
-  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
-  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
-  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
+  mutate(Tdlap = mp2td+(-0.0051*(3197.48-3092.27))) %>%
+  mutate(ea = (6.112*exp((17.62*Tdlap)/(243.12+Tdlap)))) %>%
   mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((AirT_C+273.15)^4)) %>%
-  select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout) %>%
-  mutate(tcum_pos = ifelse(AirT_C > 3, AirT_C, 0),
+  mutate(tcum_pos = ifelse(AirT_C > 4.58, AirT_C, 0),
          tcum_c = cumsum(tcum_pos),
          nrcum_c = cumsum(nrfix)) %>%
   select(c(tcum_c, nrcum_c))
 
 #model NR for MP4 using lapse T (elr or l&e) and obs ea
 mp4d<- mp4 %>%
-  mutate(HD1tlap = HD1ta+(-0.00815*(3197.48-3059.04))) %>%
-  mutate(Tdlap = HD1td+(-0.0051*(3197.48-3059.04))) %>%
-  mutate(esat = (6.112*exp((17.62*Tdlap)/(243.12+Tdlap)))) %>%
-  mutate(ea = (humidity * esat)/100) %>%
-  mutate(Cc_pt1 = avgLWin/((stef)*(HD1tlap+273.15)^4)) %>%
-  mutate(Cc_pt2 = Cc_pt1 /(0.53+(0.065*ea))) %>%
-  mutate(Cc = (Cc_pt2 -1)/0.4) %>%
-  mutate(Cc_fix = if_else(Cc<0,0,if_else(Cc>1,1,Cc))) %>%
-  mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((HD1tlap+273.15)^4)) %>%
-  select(-c(Cc_pt1, Cc_pt2, Cc)) %>%
+  mutate(Tlap = Tjw+(-0.00815*(3197.48-3089.86))) %>% 
+  mutate(Tdlap = mp2td+(-0.0051*(3197.48-3092.27))) %>%
+  mutate(ea = (6.112*exp((17.62*Tdlap)/(243.12+Tdlap)))) %>%
+  mutate(Lwin_fix = (0.53+(0.065*ea))*(1+(0.4*Cc_fix))*(5.67*10^-8)*((Tlap+273.15)^4)) %>%
   mutate(nrfix = SWnet + (Lwin_fix-avgLWout)) %>%
   mutate(LWnet = Lwin_fix - avgLWout) %>%
-  mutate(tcum_pos = ifelse(HD1tlap > 3, HD1tlap, 0),
+  mutate(tcum_pos = ifelse(Tlap > 4.58, Tlap, 0),
          tcum_d = cumsum(tcum_pos),
          nrcum_d = cumsum(nrfix)) %>%
   select(c(tcum_d, nrcum_d))
 
 #write all the results for Ta, ea, and rad to CSVs
 write.csv(mp4a, "mp4a.csv")
-write.csv(mp4b, "mp4b.csv")
-write.csv(mp4bb, "mp4bb.csv")
+write.csv(mp4b1, "mp4b.csv")
+write.csv(mp4b2, "mp4bb.csv")
 write.csv(mp4c, "mp4c.csv")
 write.csv(mp4d, "mp4d.csv")
 
@@ -277,48 +246,51 @@ write.csv(mp4d, "mp4d.csv")
 #now for plotting T and NR for each model scenario
 
 #need Tcum and NRcum for each scenario
-allmod <- cbind(mp4a, mp4b, mp4bb, mp4c, mp4d)
+allmod <- cbind(mp4a, mp4b1, mp4b2, mp4c, mp4d)
 
 ggplot(allmod, aes(x=Datetime)) +
   geom_line(aes(y=tcum_a), color="black") +
-  geom_line(aes(y=tcum_b), color = "red") +
-  geom_line(aes(y=tcum_bb), color ="blue") +
+  geom_line(aes(y=tcum_b1), color = "red") +
+  geom_line(aes(y=tcum_b2), color ="blue") +
   geom_line(aes(y=tcum_c), color="orange") +
   geom_line(aes(y=tcum_d), color="purple")
 
 ggplot(allmod, aes(x=Datetime)) +
   geom_line(aes(y=nrcum_a), color="black") +
-  geom_line(aes(y=nrcum_b), color = "red") +
-  geom_line(aes(y=nrcum_bb), color ="blue") +
+  geom_line(aes(y=nrcum_b1), color = "red") +
+  geom_line(aes(y=nrcum_b2), color ="blue") +
   geom_line(aes(y=nrcum_c), color="orange") +
   geom_line(aes(y=nrcum_d), color="purple")
 
+#compare tcum to each ta observed
+ggplot(allmod, aes(x=Datetime)) +
+  geom_line(aes(y=tcum_a-tcum_b1, color="ELR diff")) +
+  geom_line(aes(y=tcum_a-tcum_b2, color="L&E diff")) 
 
-#make plots showing the diff between obs and elr rad data and TEMP
-#first, get the diff between obs and elr
-mp4obs <- mp4obs %>%
-  mutate(nrdif = nrfix - mp4elr$nrfix,
-         swdif = SWnet - mp4elr$SWnet,
-         lwdif = LWnet - mp4elr$LWnet,
-         tdif = AirT_C - mp4elr$Tlap) %>%
-  mutate(tcum_ob = cumsum(AirT_C),
-         tcum_lap = cumsum(mp4elr$Tlap),
-         nrcum_ob = cumsum(nrfix),
-         nrcum_lap = cumsum(mp4elr$nrfix),
-         tcum_obpos = ifelse(AirT_C>0, AirT_C, 0),
-         tcum_ob0 = cumsum(tcum_obpos),
-         tcum_lappos = ifelse(mp4elr$Tlap>0, mp4elr$Tlap, 0),
-         tcum_lap0 = cumsum(tcum_lappos))
+#show with 1:1
+ggplot(allmod, aes(x=tcum_a, y=tcum_b1)) + 
+  geom_line() +
+  geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
+  
+ggplot(allmod, aes(x=tcum_a, y=tcum_b2)) + 
+  geom_line() +
+  geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
+
+#compare nrcum to each scenario (4)
+ggplot(allmod, aes(x=nrcum_a, y=nrcum_b1)) + 
+  geom_line() +
+  geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
+
+ggplot(allmod, aes(x=nrcum_a, y=nrcum_b2)) + 
+  geom_line() +
+  geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
+
+ggplot(allmod, aes(x=nrcum_a, y=nrcum_c)) + 
+  geom_line() +
+  geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
+
+ggplot(allmod, aes(x=nrcum_a, y=nrcum_d)) + 
+  geom_line() +
+  geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
 
 
-ggplot(mp4obs) + geom_line(aes(Datetime, tcum_ob), size=1) +
-  geom_line(aes(Datetime, tcum_lap), color="purple", size=1) +
-  labs(y= "Cumulative T")
-
-ggplot(mp4obs) + geom_line(aes(Datetime, nrcum_ob), size=1) +
-  geom_line(aes(Datetime, nrcum_lap), color="purple", size=1) +
-  labs(y= "Cumulative NR")
-
-ggplot(mp4obs) + geom_line(aes(Datetime, tcum_ob0), size=1) +
-  geom_line(aes(Datetime, tcum_lap0), color="purple", size=1) +
-  labs(y= "Cumulative T > 0")
