@@ -271,9 +271,9 @@ telr_hrsum <- mp4elr %>%
 #now model using degree day for T and rad
 
 #define params
-mft <- 1.5 #1.588608537
-tref <- 3
-mfr <- 0.1 #0.146665342
+mft <- 1.77463
+tref <- 4.57663
+mfr <- 0.15009
 
 tobs_hrsum <- tobs_hrsum %>%
   filter(Date > "2021-04-30") %>%
