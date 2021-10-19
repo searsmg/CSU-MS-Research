@@ -54,8 +54,8 @@ all21 <- merge(T21, RH_dewpt, by=c("Datetime", "ID"))
 
 all20 <- merge(T20, RH_dewpt, by=c("Datetime", "ID"))
 
-write.csv(all21, "melt21.csv")
-write.csv(all20, "melt20.csv")
+#write.csv(all21, "melt21.csv")
+#write.csv(all20, "melt20.csv")
 
 #get rid of the 01 minutes and make it 00
 minute(all20$Datetime) <- 0
@@ -199,4 +199,180 @@ p
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
+###############################################################################
+###############################################################################
+
+#ea analyses
+all20 <- all20 %>%
+  mutate(ea = (6.112*exp((17.62*dewpoint)/(243.12+dewpoint))))
+
+#data are set up - run models now for 2020 (get slope, r2, and p-value)
+
+#slope, r2, deg of free, and pval for 2020 hourly
+fit_model <- function(all20) lm(ea ~ Elevation, data = all20) #linear model
+get_slope <- function(model) tidy(model)$estimate[2] #pull out the slope
+pearson <- function(all20) cor.test(all20$Elevation, all20$ea, data=all20) #pearson cor test
+pval <- function(pear) tidy(pear)$p.value #p value from cor test
+df <- function(pear) tidy(pear)$parameter[1] #deg of freedom from cor test
+
+#calculate r2
+all20_r <- all20 %>%
+  select(-c(ID)) %>%
+  group_by(Datetime) %>%
+  summarize(r2 = cor(Elevation, ea, use="complete.obs")^2)
+
+#run lm, pull out slope, pearson cor test, pull out pval + deg of free
+easlope20 <- all20 %>%
+  group_nest(Datetime) %>%
+  mutate(model = map(data, fit_model)) %>%
+  mutate(slope = map_dbl(model, get_slope)) %>%
+  mutate(slope_km = slope*1000) %>%
+  mutate(pear = map(data, pearson)) %>%
+  mutate(pval = map_dbl(pear, pval)) %>%
+  mutate(df = map_dbl(pear, df))
+
+#add derived r2 to slope 20 (with rest of dadta)
+easlope20 <- easlope20 %>%
+  add_column(r2 = all20_r$r2)
+
+############################################################################
+#run models now for 2021 (get slope, r2, and p-value)
+
+all21 <- all21 %>%
+  mutate(ea = (6.112*exp((17.62*dewpoint)/(243.12+dewpoint))))
+
+#slope, r2, deg of free, and pval for 2021 hourly
+fit_model <- function(all21) lm(ea ~ Elevation, data = all21) #linear model
+get_slope <- function(model) tidy(model)$estimate[2] #pull out the slope
+pearson <- function(all21) cor.test(all21$Elevation, all21$ea, data=all21) #pearson cor test
+pval <- function(pear) tidy(pear)$p.value #p value from cor test
+df <- function(pear) tidy(pear)$parameter[1] #deg of freedom from cor test
+
+#calculate r2
+all21_r <- all21 %>%
+  select(-c(ID)) %>%
+  group_by(Datetime) %>%
+  summarize(r2 = cor(Elevation, ea, use="complete.obs")^2)
+
+#run lm, pull out slope, pearson cor test, pull out pval + deg of free
+easlope21 <- all21 %>%
+  group_nest(Datetime) %>%
+  mutate(model = map(data, fit_model)) %>%
+  mutate(slope = map_dbl(model, get_slope)) %>%
+  mutate(slope_km = slope*1000) %>%
+  mutate(pear = map(data, pearson)) %>%
+  mutate(pval = map_dbl(pear, pval)) %>%
+  mutate(df = map_dbl(pear, df))
+
+#add derived r2 to slope 21 (with rest of data)
+easlope21 <- easlope21 %>%
+  add_column(r2 = all21_r$r2)
+
 ##########################################################################
+
+ea20 <- easlope20 %>%
+  mutate(year = "2020") %>%
+  select(-c(data, model, pear))
+
+ea21 <- easlope21  %>%
+  mutate(year = "2021") %>%
+  select(-c(data, model, pear))
+
+easlope <- rbind(ea20, ea21)
+
+PLOT = "ea gradient_20&21 by r2"
+ggplot(easlope, aes(x=Datetime, y=slope_km)) +
+  geom_point(aes(colour=r2), size=2) + 
+  labs(x= "Date", y="Elevational vapor pressure", color=expression(paste("R"^2))) +
+  scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  facet_wrap(~year, scales="free_x") + PlotFormat +
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) +
+  scale_y_continuous(breaks=seq(-100, 50, 10))
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+
+PLOT = "ea gradient_20&21 by pval"
+ggplot(easlope, aes(x=Datetime, y=slope_km)) +
+  geom_point(aes(colour=cut(pval, c(-Inf, 0.05, Inf))), size=2) + 
+  scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  facet_wrap(~year, scales="free_x") + PlotFormat +
+  scale_color_manual(name = "pval",
+                     values = c("black","gray"),
+                     labels = c("S", "NS")) +
+  labs(x="", y="Elevational vapor pressure") +
+  guides(colour=guide_legend(title="p-value"))
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+############################################################################
+#plot by time of day - heat maps
+
+easlope_edit <- easlope %>%
+  mutate(hour = hour(Datetime)) %>%
+  mutate(doy = yday(Datetime)) 
+
+PLOT="heatmap_slope_ea"
+slopefig <- ggplot(easlope_edit, aes(x=doy, y=hour, fill=slope_km)) +
+  geom_tile() + facet_grid(~year, scale="free_x") +
+  scale_fill_distiller(palette = 'RdYlBu')+
+  labs(fill=expression(degree*C/km), x="Day of year", y="Hour") + PlotFormat +
+  scale_y_continuous(breaks=seq(0, 23, 4))
+slopefig
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+PLOT = "heatmap_R2_ea"
+r2 <- ggplot(easlope_edit, aes(x=doy, y=hour, fill=r2)) +
+  geom_tile() + facet_grid(~year, scale="free_x") +
+  labs(fill=expression("R"^2), x="Day of year", y="Hour") +
+  scale_fill_gradientn(colors=brewer.pal(name="Greys", n=3)) +
+  scale_y_continuous(breaks=seq(0, 23, 4)) + PlotFormat
+r2
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+PLOT = "heatmap_p_ea"
+p <- ggplot(easlope_edit, aes(x=doy, y=hour, fill=cut(pval, c(-Inf, 0.05, Inf)))) +
+  geom_tile() + facet_grid(~year, scale="free_x") +
+  labs(fill="p-value", x="Day of year", y="Hour") +
+  #scale_fill_gradientn(colors=brewer.pal(name="Greys", n=5)) +
+  scale_y_continuous(breaks=seq(0, 23, 4)) + PlotFormat +
+  scale_fill_manual(name = "pval",
+                    values = c("black","gray"),
+                    labels = c("S", "NS"))
+p
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+##########################################################################
+all20 <- all20 %>%
+  mutate(year = "2020")
+
+all21 <- all21 %>%
+  mutate(year = "2021")
+
+all <- rbind(all20, all21)
+
+allmp4 <- all %>%
+  filter(ID == "MP4")
+
+PLOT = "Ta vs Tdew for mp4"
+ggplot(allmp4, aes(x=AirT_C, y=dewpoint)) +
+  geom_point() +
+  geom_abline(slope = 1, size=1, color="red") + 
+  facet_wrap(~year, scales="free_x")
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+alledit <- all %>%
+  filter(dewpoint > -20)
+
+PLOT = "Ta vs Tdew for all"
+ggplot(alledit, aes(x=AirT_C, y=dewpoint)) +
+  geom_point() +
+  geom_abline(slope = 1, size=1, color="red") + 
+  facet_wrap(~year, scales="free_x")
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
