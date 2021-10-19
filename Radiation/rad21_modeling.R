@@ -258,8 +258,8 @@ write.csv(mp4b1, "mp4b1.csv")
 write.csv(mp4b2, "mp4b2.csv")
 write.csv(mp4c, "mp4c.csv")
 write.csv(mp4d, "mp4d.csv")
-write.csv(mp4d, "mp4e1.csv")
-write.csv(mp4d, "mp4e2.csv")
+write.csv(mp4e1, "mp4e1.csv")
+write.csv(mp4e2, "mp4e2.csv")
 
 ############################################################################
 #now for plotting T and NR for each model scenario
