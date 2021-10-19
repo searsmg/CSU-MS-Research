@@ -9,6 +9,8 @@ library(plotly)
 library(tidyverse)
 library(RNRCS)
 library(esquisse)
+library(RColorBrewer)
+library(gridExtra)
 
 rm(list = ls())
 
@@ -235,12 +237,29 @@ mp4d<- mp4 %>%
          nrcum_d = cumsum(nrfix_d)) %>%
   select(c(Datetime, tcum_d, nrcum_d, tpos_d, nrfix_d))
 
+
+#model E1 using obs T (TI model only)
+mp4e1 <- mp4 %>% 
+  mutate(tpos_e1 = ifelse(AirT_C > 4.58, AirT_C, 0),
+       tcum_e1 = cumsum(tpos_e1)) %>%
+  select(c(Datetime, tcum_e1, tpos_e1))
+
+#model E2 using Ta lapsed using L&E value
+mp4e2 <- mp4 %>% 
+  mutate(Tlap = Tjw+(-0.00815*(3197.48-3089.86))) %>%
+  mutate(tpos_e2 = ifelse(Tlap > 4.58, Tlap, 0),
+         tcum_e2 = cumsum(tpos_e2)) %>%
+  select(c(Datetime, tcum_e2,tpos_e2))
+
+
 #write all the results for Ta, ea, and rad to CSVs
 write.csv(mp4a, "mp4a.csv")
 write.csv(mp4b1, "mp4b1.csv")
 write.csv(mp4b2, "mp4b2.csv")
 write.csv(mp4c, "mp4c.csv")
 write.csv(mp4d, "mp4d.csv")
+write.csv(mp4d, "mp4e1.csv")
+write.csv(mp4d, "mp4e2.csv")
 
 ############################################################################
 #now for plotting T and NR for each model scenario
@@ -251,25 +270,38 @@ allmod <- cbind(mp4a, mp4b1, mp4b2, mp4c, mp4d)
 allmod <- allmod[-c(6,11,16,21)]
 
 ggplot(allmod, aes(x=Datetime)) +
-  geom_line(aes(y=tcum_a), color="black") +
-  geom_line(aes(y=tcum_b1), color = "red") +
-  geom_line(aes(y=tcum_b2), color ="blue") +
-  geom_line(aes(y=tcum_c), color="orange") +
-  geom_line(aes(y=tcum_d), color="purple")
+  geom_line(aes(y=tcum_a, color="a,c,e1 [obs]"), size=1) +
+  geom_line(aes(y=tcum_b1, color = "b1 [elr]"), size=1) +
+  geom_line(aes(y=tcum_b2, color ="b2,d,e2 [L&E]"), size=1) +
+  labs(x="", y="Cumulative air temperure (C)", color="model") +
+  scale_color_brewer(palette="Dark2")
 
 ggplot(allmod, aes(x=Datetime)) +
-  geom_line(aes(y=nrcum_a), color="black") +
-  geom_line(aes(y=nrcum_b1), color = "red") +
-  geom_line(aes(y=nrcum_b2), color ="blue") +
-  geom_line(aes(y=nrcum_c), color="orange") +
-  geom_line(aes(y=nrcum_d), color="purple")
+  geom_line(aes(y=nrcum_a, color="a"), size=1) +
+  geom_line(aes(y=nrcum_b1, color = "b1"), size=1) +
+  geom_line(aes(y=nrcum_b2, color ="b2"), size=1) +
+  geom_line(aes(y=nrcum_c, color="c"), size=1) +
+  geom_line(aes(y=nrcum_d, color="d"), size=1) +
+  labs(x="", y="Cumulative net radiation (W/m2)", color="model") +
+  scale_color_brewer(palette="Dark2")
 
 #compare tcum to each ta observed
 ggplot(allmod, aes(x=Datetime)) +
   geom_line(aes(y=tcum_a-tcum_b1, color="ELR diff")) +
-  geom_line(aes(y=tcum_a-tcum_b2, color="L&E diff")) 
+  geom_line(aes(y=tcum_a-tcum_b2, color="L&E diff")) +
+  labs(x="", y="Cumulative Ta difference (C)", color="model") +
+  scale_color_brewer(palette="Dark2")
 
-#show with 1:1
+#compare nr cum to model a
+ggplot(allmod, aes(x=Datetime)) +
+  geom_line(aes(y=nrcum_a-nrcum_b1, color="b1 diff")) +
+  geom_line(aes(y=nrcum_a-nrcum_b2, color="b2 diff")) +
+  geom_line(aes(y=nrcum_a-nrcum_c, color="c diff")) +
+  geom_line(aes(y=nrcum_a-nrcum_d, color="d diff")) +
+  scale_color_brewer(palette="Dark2") +
+  labs(x="", y="Cumulative NR difference (W/m2)", color="model")
+
+#show ta with 1:1
 ggplot(allmod, aes(x=tcum_a, y=tcum_b1)) + 
   geom_line() +
   geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
@@ -279,20 +311,20 @@ ggplot(allmod, aes(x=tcum_a, y=tcum_b2)) +
   geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
 
 #compare nrcum to each scenario (4)
-ggplot(allmod, aes(x=nrcum_a, y=nrcum_b1)) + 
+b1nr <- ggplot(allmod, aes(x=nrcum_a, y=nrcum_b1)) + 
   geom_line() +
   geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
 
-ggplot(allmod, aes(x=nrcum_a, y=nrcum_b2)) + 
+b2nr <- ggplot(allmod, aes(x=nrcum_a, y=nrcum_b2)) + 
   geom_line() +
   geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
 
-ggplot(allmod, aes(x=nrcum_a, y=nrcum_c)) + 
+cnr <- ggplot(allmod, aes(x=nrcum_a, y=nrcum_c)) + 
   geom_line() +
   geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
 
-ggplot(allmod, aes(x=nrcum_a, y=nrcum_d)) + 
+dnr <- ggplot(allmod, aes(x=nrcum_a, y=nrcum_d)) + 
   geom_line() +
   geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
 
-
+grid.arrange(b1nr, b2nr, cnr, dnr, nrow=2)
