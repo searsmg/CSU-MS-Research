@@ -96,7 +96,7 @@ mp4d <- mp4d %>%
 #now model using degree day for T and rad
 
 #define params
-mft <- 1.6 #1.77463
+mft <- 2.2 #1.77463
 tref <- 4.57663
 mfr <- 0.18 #0.15009
 
