@@ -24,6 +24,11 @@ minute(rh$Datetime) <- 0
 jw <- merge(rh, jw, by="Datetime")
 
 jw <- jw %>%
+  mutate(Sd_in = ifelse(Sd_in<0,0,Sd_in)) %>%
   mutate(ptype = ifelse(Precip_In>lag(Precip_In) & Sd_in>lag(Sd_in), 
-                        "snow", ifelse(Precip_In>lag(Precip_In) & Sd_in==lag(Sd_in)| Sd_in<lag(Sd_in),
-                                       "rain", "none")))
+                        "snow", ifelse(Precip_In>lag(Precip_In) & (Sd_in==lag(Sd_in)| Sd_in<lag(Sd_in)),
+                                       "rain", "none"))) %>%
+  filter(!ptype == "none")
+
+
+write.csv(jw, "rainsnow.csv")
