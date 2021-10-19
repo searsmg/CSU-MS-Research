@@ -7,6 +7,7 @@ library(plotly)
 library(tidyverse)
 library(RNRCS)
 library(esquisse)
+library(RColorBrewer)
 
 rm(list = ls()) 
 
@@ -92,6 +93,23 @@ mp4d <- mp4d %>%
             radcum = sum(nrfix_d)*1/24) %>%
   mutate(Date = as.Date(Date))
 
+mp4e1 <- read.csv("mp4e1.csv") %>%
+  mutate(Datetime=ymd_hms(Datetime))
+
+mp4e1 <- mp4e1 %>%
+  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
+  summarize(Tcum = sum(tpos_e1)*1/24) %>%
+  mutate(Date = as.Date(Date))
+
+mp4e2 <- read.csv("mp4e2.csv") %>%
+  mutate(Datetime=ymd_hms(Datetime))
+
+mp4e2 <- mp4e2 %>%
+  group_by(Date = format(Datetime, "%Y-%m-%d")) %>%
+  summarize(Tcum = sum(tpos_e2)*1/24) %>%
+  mutate(Date = as.Date(Date))
+
+
 ####################################################################
 #now model using degree day for T and rad
 
@@ -100,7 +118,7 @@ mft <- 2.2 #1.77463
 tref <- 4.57663
 mfr <- 0.18 #0.15009
 
-#model a
+#####model a####
 mp4a <- mp4a %>%
   mutate(melt = if_else(Tcum<=tref,mfr*radcum,
                         mft*(Tcum-tref)+mfr*radcum)) %>%
@@ -121,7 +139,7 @@ for(i in 2:nrow(mp4a)){
 ggplot() + geom_line(data=mp4a, aes(Date, swe_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
 
-#model b1
+####model b1####
 mp4b1 <- mp4b1 %>%
   mutate(melt = if_else(Tcum<=tref,mfr*radcum,
                         mft*(Tcum-tref)+mfr*radcum)) %>%
@@ -142,7 +160,7 @@ for(i in 2:nrow(mp4b1)){
 ggplot() + geom_line(data=mp4b1, aes(Date, swe_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
 
-#model b2
+####model b2####
 mp4b2 <- mp4b2 %>%
   mutate(melt = if_else(Tcum<=tref,mfr*radcum,
                         mft*(Tcum-tref)+mfr*radcum)) %>%
@@ -163,7 +181,7 @@ for(i in 2:nrow(mp4b2)){
 ggplot() + geom_line(data=mp4b2, aes(Date, swe_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
 
-#model c
+####model c####
 mp4c <- mp4c %>%
   mutate(melt = if_else(Tcum<=tref,mfr*radcum,
                         mft*(Tcum-tref)+mfr*radcum)) %>%
@@ -184,7 +202,7 @@ for(i in 2:nrow(mp4c)){
 ggplot() + geom_line(data=mp4c, aes(Date, swe_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
 
-#model d
+####model d####
 mp4d <- mp4d %>%
   mutate(melt = if_else(Tcum<=tref,mfr*radcum,
                         mft*(Tcum-tref)+mfr*radcum)) %>%
@@ -205,36 +223,151 @@ for(i in 2:nrow(mp4d)){
 ggplot() + geom_line(data=mp4d, aes(Date, swe_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
 
+####model e1####
+#first bring in variable MFt
+mfvar <- read.csv("TI_mfs.csv") %>%
+  mutate(Date = mdy(Date))
 
-ggplot() + 
-  geom_line(data=mp4a, aes(Date, swe_cum, color="a")) +
-  geom_line(data=mp4b1, aes(Date, swe_cum, color="b1")) +
-  geom_line(data=mp4b2, aes(Date, swe_cum, color="b2")) +
-  geom_line(data=mp4c, aes(Date, swe_cum, color="c")) +
-  geom_line(data=mp4d, aes(Date, swe_cum, color="d")) +
+mp4e1 <- merge(mp4e1, mfvar, by="Date")
+
+mp4e1 <- mp4e1 %>%
+  mutate(melt = if_else(Tcum<=tref,0,
+                        MFt*(Tcum-tref))) %>%
+  mutate(melt = pmax(melt, 0))
+
+mp4e1 <- merge(mp4e1, fsnow_plap, by="Date") #update later depending on fsnow
+
+mp4e1$swe_cum <- as.numeric(NA)
+mp4e1[1,"swe_cum"] <- 644
+
+
+for(i in 2:nrow(mp4e1)){
+  if(is.na(mp4e1$swe_cum[i])){
+    mp4e1$swe_cum[i] = mp4e1$swe_cum[i-1]+mp4e1$fsnow_fix[i]-mp4e1$melt[i]
+  }
+}
+
+ggplot() + geom_line(data=mp4e1, aes(Date, swe_cum)) +
   geom_point(data=swe17, aes(x=Date, y=SWE))
 
 
+####model e2####
+#first bring in variable MFt
+mfvar <- read.csv("TI_mfs.csv") %>%
+  mutate(Date = mdy(Date))
 
-#filter so melt does not go negative 
-tobs_hrsum <- tobs_hrsum %>%
-  filter(swe_cum > 0)
+mp4e2 <- merge(mp4e2, mfvar, by="Date")
 
-telr_hrsum <- telr_hrsum %>%
-  filter(swe_cum > 0)
+mp4e2 <- mp4e2 %>%
+  mutate(melt = if_else(Tcum<=tref,0,
+                        MFt*(Tcum-tref))) %>%
+  mutate(melt = pmax(melt, 0))
 
-#plot the two to compare elr vs obs
-PLOT = "Base vs ELR+obvp"
-compare <- ggplot() + geom_line(data=tobs_hrsum, aes(Date, swe_cum), size=1) +
-  geom_line(data=telr_hrsum, aes(Date, swe_cum), color="purple", size=1) +
-  geom_point(data=swe17, aes(x=Date, y=SWE), shape="triangle", size=2) +
-  theme_bw() +
-  PlotFormat +
-  labs(x="", y="SWE (mm)") +
-  scale_y_continuous(breaks=seq(0, 700, 100)) 
-  
-ggplotly(compare)
-compare
+mp4e2 <- merge(mp4e2, fsnow_plap, by="Date") #update later depending on fsnow
+
+mp4e2$swe_cum <- as.numeric(NA)
+mp4e2[1,"swe_cum"] <- 644
 
 
-ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+for(i in 2:nrow(mp4e2)){
+  if(is.na(mp4e2$swe_cum[i])){
+    mp4e2$swe_cum[i] = mp4e2$swe_cum[i-1]+mp4e2$fsnow_fix[i]-mp4e2$melt[i]
+  }
+}
+
+ggplot() + geom_line(data=mp4e2, aes(Date, swe_cum)) +
+  geom_point(data=swe17, aes(x=Date, y=SWE))
+
+##############################################################################
+#filter so swe doesn't go below 0
+
+mp4a <- mp4a %>%
+  mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
+  rename(swe_a = swe_cum) %>%
+  select(c(Date, swe_a))
+
+mp4b1 <- mp4b1 %>%
+  mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
+  rename(swe_b1 = swe_cum)%>%
+  select(c(Date, swe_b1))
+
+mp4b2 <- mp4b2 %>%
+  mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
+  rename(swe_b2 = swe_cum)%>%
+  select(c(Date, swe_b2))
+
+mp4c <- mp4c %>%
+  mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
+  rename(swe_c = swe_cum)%>%
+  select(c(Date, swe_c))
+
+mp4d <- mp4d %>%
+  mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
+  rename(swe_d = swe_cum)%>%
+  select(c(Date, swe_d))
+
+mp4e1 <- mp4e1 %>%
+  mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
+  rename(swe_e1 = swe_cum)%>%
+  select(c(Date, swe_e1))
+
+mp4e2 <- mp4e2 %>%
+  mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
+  rename(swe_e2 = swe_cum)%>%
+  select(c(Date, swe_e2))
+
+allmod <- cbind(mp4a, mp4b1, mp4b2, mp4c, mp4d, mp4e1, mp4e2)
+allmod <- allmod[-c(3,5,7,9,11,13)]
+
+###############################################################################
+#PLOTTING
+
+#all models together
+mods <- ggplot() + 
+  geom_line(data=mp4a, aes(Date, swe_a, color="a")) +
+  geom_line(data=mp4b1, aes(Date, swe_b1, color="b1")) +
+  geom_line(data=mp4b2, aes(Date, swe_b2, color="b2")) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="c")) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="d")) +
+  geom_line(data=mp4e1, aes(Date, swe_e1, color="e1")) +
+  geom_line(data=mp4e2, aes(Date, swe_e2, color="e2")) +
+  geom_point(data=swe17, aes(x=Date, y=SWE)) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(y="SWE (mm)", color="models")
+
+mods
+
+ggplotly(mods)
+
+#difference when comparing models to a
+ggplot(allmod, aes(x=Date)) +
+  geom_line(aes(y=swe_a-swe_b1, color="b1 diff")) +
+  geom_line(aes(y=swe_a-swe_b2, color="b2_diff")) +
+  geom_line(aes(y=swe_a-swe_c, color="c_diff")) +
+  geom_line(aes(y=swe_a-swe_d, color="d_diff")) +
+  labs(x="", y="SWE difference (mm)", color="model") +
+  scale_color_brewer(palette="Dark2")
+
+#compare nrcum to each scenario (4)
+b1swe <- ggplot(allmod, aes(x=swe_a, y=swe_b1)) + 
+  geom_line() +
+  scale_x_reverse() + scale_y_reverse() +
+  geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1 
+
+b2swe <- ggplot(allmod, aes(x=swe_a, y=swe_b2)) + 
+  geom_line() +
+  scale_x_reverse() + scale_y_reverse() +
+  geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
+
+cswe <- ggplot(allmod, aes(x=swe_a, y=swe_c)) + 
+  geom_line() +
+  scale_x_reverse() + scale_y_reverse() +
+  geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
+
+dswe <- ggplot(allmod, aes(x=swe_a, y=swe_d)) + 
+  geom_line() +
+  scale_x_reverse() + scale_y_reverse() +
+  geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
+
+grid.arrange(b1swe, b2swe, cswe, dswe, nrow=2)
+
