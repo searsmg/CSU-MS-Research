@@ -24,9 +24,12 @@ minute(rh$Datetime) <- 0
 jw <- merge(rh, jw, by="Datetime")
 
 jw <- jw %>%
-  mutate(Sd_in = ifelse(Sd_in<0,0,Sd_in)) %>%
-  mutate(ptype = ifelse(Precip_In>lag(Precip_In) & Sd_in>lag(Sd_in), 
-                        "snow", ifelse(Precip_In>lag(Precip_In) & (Sd_in==lag(Sd_in)| Sd_in<lag(Sd_in)),
+  mutate(Sd_in = ifelse(Sd_in<0,0,Sd_in),
+         Precip_In = ifelse(Precip_In<0,0,Precip_In),
+         precip_in = Precip_In-lag(Precip_In)) %>%
+  mutate(precip_in = ifelse(precip_in < 0.1, 0, precip_in)) %>%
+  mutate(ptype = ifelse(precip_in >0 & Sd_in>lag(Sd_in), 
+                        "snow", ifelse(precip_in & (Sd_in==lag(Sd_in)| Sd_in<lag(Sd_in)),
                                        "rain", "none"))) %>%
   filter(!ptype == "none")
 
