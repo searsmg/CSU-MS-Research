@@ -8,6 +8,7 @@ library(tidyverse)
 library(RNRCS)
 library(esquisse)
 library(RColorBrewer)
+library(viridis)
 
 rm(list = ls()) 
 
@@ -18,15 +19,35 @@ PlotFormat = theme(axis.text=element_text(size=16, color="black"),
                    axis.title.x=element_text(size=18, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
                    axis.title.y=element_text(size=18, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
                    plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
-                   legend.title=element_text(size=16, color="black"),                                                                    
-                   legend.text=element_text(size=16, color="black"),                                                                   
+                   legend.title=element_text(size=14, color="black"),                                                                    
+                   legend.text=element_text(size=14, color="black"),                                                                   
                    legend.position = "right", 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
                    panel.background = element_blank(), 
-                   axis.line = element_line(colour = "black"),
-                   strip.text = element_text(size=25))
+                   #axis.line = element_line(colour = "black"),
+                   strip.text = element_text(size=25),
+                   panel.border = element_rect(colour = "black", fill=NA, size=1))
 
+# a really long way to create minor tick axis tick marks
+every_nth <- function(x, nth, empty = TRUE, inverse = FALSE) 
+{
+  if (!inverse) {
+    if(empty) {
+      x[1:nth == 1] <- ""
+      x
+    } else {
+      x[1:nth != 1]
+    }
+  } else {
+    if(empty) {
+      x[1:nth != 1] <- ""
+      x
+    } else {
+      x[1:nth == 1]
+    }
+  }
+}
 
 ###########################################################################################
 #bringing in swe data for mp4 (swe17)
@@ -43,6 +64,18 @@ fsnow_plap <- fsnow_hr %>%
   summarize(fsnow = sum(precip_mm)) %>%
   mutate(Date = as.Date(Date)) %>%
   mutate(fsnow_fix = fsnow*1.05056) #1.05056 is from liston and elder 2006
+
+#add in daily JW for TI models
+fsnow_day <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/dailyjw.csv") %>%
+  mutate(Date = mdy(Date))
+
+#fsnow_day <- fsnow_day %>%
+#mutate(Ta_C = (Ta_F-32)*(5/9),
+#       PrecipAcum_mm = precip_accum_in*25.4,
+#       Sd_mm = Sd_in*25.4,
+#       SWE_mm = SWE_in*25.4) %>%
+#  select(-c(Ta_F, precip_accum_in, Sd_in, SWE_in)) %>%
+#  mutate(precip = PrecipAcum_mm - lag(PrecipAcum_mm))
 
 
 ########################################################
@@ -231,8 +264,8 @@ mfvar <- read.csv("TI_mfs.csv") %>%
 mp4e1 <- merge(mp4e1, mfvar, by="Date")
 
 mp4e1 <- mp4e1 %>%
-  mutate(melt = if_else(Tcum<=tref,0,
-                        MFt*(Tcum-tref))) %>%
+  mutate(melt = if_else(Tcum<=0,0,
+                        MFt*(Tcum-0))) %>%
   mutate(melt = pmax(melt, 0))
 
 mp4e1 <- merge(mp4e1, fsnow_plap, by="Date") #update later depending on fsnow
@@ -259,8 +292,8 @@ mfvar <- read.csv("TI_mfs.csv") %>%
 mp4e2 <- merge(mp4e2, mfvar, by="Date")
 
 mp4e2 <- mp4e2 %>%
-  mutate(melt = if_else(Tcum<=tref,0,
-                        MFt*(Tcum-tref))) %>%
+  mutate(melt = if_else(Tcum<=0,0,
+                        MFt*(Tcum-0))) %>%
   mutate(melt = pmax(melt, 0))
 
 mp4e2 <- merge(mp4e2, fsnow_plap, by="Date") #update later depending on fsnow
@@ -323,21 +356,26 @@ allmod <- allmod[-c(3,5,7,9,11,13)]
 #PLOTTING
 
 #all models together
-mods <- ggplot() + 
-  geom_line(data=mp4a, aes(Date, swe_a, color="a")) +
-  geom_line(data=mp4b1, aes(Date, swe_b1, color="b1")) +
-  geom_line(data=mp4b2, aes(Date, swe_b2, color="b2")) +
-  geom_line(data=mp4c, aes(Date, swe_c, color="c")) +
-  geom_line(data=mp4d, aes(Date, swe_d, color="d")) +
-  geom_line(data=mp4e1, aes(Date, swe_e1, color="e1")) +
-  geom_line(data=mp4e2, aes(Date, swe_e2, color="e2")) +
-  geom_point(data=swe17, aes(x=Date, y=SWE)) +
-  scale_color_brewer(palette = "Dark2") +
-  labs(y="SWE (mm)", color="models")
+PLOT="allmelt"
+custombreaks <- seq(0, 700, 50)
+ggplot() + 
+  geom_line(data=mp4a, aes(Date, swe_a, color="a"), size=1) +
+  geom_line(data=mp4b1, aes(Date, swe_b1, color="b1"), size=1) +
+  geom_line(data=mp4b2, aes(Date, swe_b2, color="b2"), size=1) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="c"), size=1) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="d"), size=1) +
+  geom_line(data=mp4e1, aes(Date, swe_e1, color="e1"), size=1) +
+  geom_line(data=mp4e2, aes(Date, swe_e2, color="e2"), size=1) +
+  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed"), size=4) +
+  scale_shape_manual(values=17) +
+  scale_color_viridis(discrete=T, option="D") +
+  labs(y="SWE (mm)", shape="", color="models", x="") +
+  PlotFormat + 
+  theme(legend.position = c(0.95, 0.8)) +
+  scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE))
 
-mods
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
-ggplotly(mods)
 
 #difference when comparing models to a
 ggplot(allmod, aes(x=Date)) +
