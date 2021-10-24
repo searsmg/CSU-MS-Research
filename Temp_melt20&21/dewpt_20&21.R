@@ -160,6 +160,48 @@ ggplot(slope, aes(x=Datetime, y=slope_Ckm)) +
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 ############################################################################
+#add in wind real quick
+#hourly rad data
+rad21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/Rad_melt21.csv", 
+                  header=TRUE) %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+uz <- rad21 %>%
+  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
+  group_by(dt_agg) %>%
+  summarize(uz = mean(WS_ms)) %>%
+  filter(dt_agg > "2021-05-01 00:00") %>%
+  rename(Datetime = dt_agg)
+
+uz21 <- merge(uz, dew21, by="Datetime")
+
+
+ggplot(uz21, aes(x=uz, y=slope_Ckm)) +
+  geom_point(aes(colour=r2)) + ylim(-30,30)
+
+#do with 2020 now
+uz_most <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/uz_all.csv", 
+                    header=TRUE) %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+uz_most <- uz_most %>%
+  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
+  group_by(dt_agg) %>%
+  summarize(uz = mean(WS_ms)) %>%
+  rename(Datetime = dt_agg)
+
+uz20 <- merge(uz_most, dew20, by="Datetime")
+
+ggplot(uz20, aes(x=uz, y=slope_Ckm)) +
+  geom_point(aes(colour=r2)) + ylim(-30,30)
+
+
+uzboth <- rbind(uz20, uz21)
+
+ggplot(uzboth, aes(x=uz, y=slope_Ckm)) +
+  geom_point(aes(colour=r2)) + ylim(-30,30)
+
+############################################################################
 #plot by time of day - heat maps
 
 slope_edit <- slope %>%
