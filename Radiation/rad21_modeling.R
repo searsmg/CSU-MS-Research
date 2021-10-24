@@ -240,14 +240,14 @@ mp4d<- mp4 %>%
 
 #model E1 using obs T (TI model only)
 mp4e1 <- mp4 %>% 
-  mutate(tpos_e1 = ifelse(AirT_C > 4.58, AirT_C, 0),
+  mutate(tpos_e1 = ifelse(AirT_C > 0, AirT_C, 0),
        tcum_e1 = cumsum(tpos_e1)) %>%
   select(c(Datetime, tcum_e1, tpos_e1))
 
 #model E2 using Ta lapsed using L&E value
 mp4e2 <- mp4 %>% 
   mutate(Tlap = Tjw+(-0.00815*(3197.48-3089.86))) %>%
-  mutate(tpos_e2 = ifelse(Tlap > 4.58, Tlap, 0),
+  mutate(tpos_e2 = ifelse(Tlap > 0, Tlap, 0),
          tcum_e2 = cumsum(tpos_e2)) %>%
   select(c(Datetime, tcum_e2,tpos_e2))
 
