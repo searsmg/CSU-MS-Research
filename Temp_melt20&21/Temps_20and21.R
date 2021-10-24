@@ -103,6 +103,50 @@ T21_slope <- T21_slope %>%
 
 slope <- rbind(T20_slope, T21_slope)
 
+#######################################################################
+#add in wind real quick
+#hourly rad data
+rad21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/Rad_melt21.csv", 
+                  header=TRUE) %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+uz <- rad21 %>%
+  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
+  group_by(dt_agg) %>%
+  summarize(uz = mean(WS_ms)) %>%
+  filter(dt_agg > "2021-05-01 00:00") %>%
+  rename(Datetime = dt_agg)
+
+uz21 <- merge(uz, T21_slope, by="Datetime")
+
+
+ggplot(uz21, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2))
+
+#do with 2020 now
+uz_most <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/uz_all.csv", 
+                  header=TRUE) %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+uz_most <- uz_most %>%
+  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
+  group_by(dt_agg) %>%
+  summarize(uz = mean(WS_ms)) %>%
+  rename(Datetime = dt_agg)
+
+uz20 <- merge(uz_most, T20_slope, by="Datetime")
+
+ggplot(uz20, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + ylim(-20,30)
+
+
+uzboth <- rbind(uz20, uz21)
+
+ggplot(uzboth, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + ylim(-20,30)
+
+#################################################################
+
 PLOT = "NSTGE_20&21"
 ggplot(slope, aes(x=Datetime, y=Slope_degCkm)) +
   geom_point(aes(colour=R2)) + 
@@ -112,7 +156,7 @@ ggplot(slope, aes(x=Datetime, y=Slope_degCkm)) +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
   facet_wrap(~year, scales="free_x") + PlotFormat +
   scale_color_gradient(low='grey', high='black')+
-  scale_linetype_manual(name ="", values = c('solid')) 
+  scale_linetype_manual(name ="", values = c('solid'))
 
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
