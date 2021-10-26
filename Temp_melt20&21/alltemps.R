@@ -190,3 +190,117 @@ ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 ##############################################################################
 #now split by snow season (peakl to SAG, SAG to start, start to peak, peak to SAG)
+
+#assigning a 'season' to Ta gradients
+ta_season <- slope_ta %>%
+  select(-c(data, model, pear)) %>%
+  mutate(doy = decimal_date(Datetime)) %>%
+  mutate(season = case_when(
+    between(doy, 2020.3306010929, 2020.4971539162) ~ "peak to SAG 2020",
+    between(doy, 2020.4972677596, 2020.7485200364) ~ "SAG to start 2020",
+    between(doy, 2020.7486338798, 2021.3286529680) ~ "start to peak 2020-2021",
+    between(doy, 2021.3287671233, 2021.4958904110) ~ "peak to SAG 2021")) %>%
+  drop_na()
+
+#assigning a 'season' to Td gradients
+td_season <- slope_td %>%
+  select(-c(data, model, pear)) %>%
+  mutate(doy = decimal_date(Datetime)) %>%
+  mutate(season = case_when(
+    between(doy, 2020.3306010929, 2020.4971539162) ~ "peak to SAG 2020",
+    between(doy, 2020.4972677596, 2020.7485200364) ~ "SAG to start 2020",
+    between(doy, 2020.7486338798, 2021.3286529680) ~ "start to peak 2020-2021",
+    between(doy, 2021.3287671233, 2021.4958904110) ~ "peak to SAG 2021")) %>%
+  drop_na()
+
+#factor so they're in chrono order
+ta_season$season <- factor(ta_season$season, levels =c("peak to SAG 2020", "SAG to start 2020", 
+                                                       "start to peak 2020-2021","peak to SAG 2021"))
+#plot Ta and Td gradients by season
+PLOT = "Ta gradient_season by r2"
+ggplot(ta_season, aes(x=Datetime, y=slope_Ckm)) +
+  geom_point(aes(colour=r2), size=2) + 
+  labs(x= "Date", y=expression("Air temperature gradient " (degree*C/km)), color=expression(paste("R"^2))) +
+  scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  facet_wrap(~factor(season) ,scales ="free_x") + 
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) +
+  #scale_y_continuous(breaks=seq(-100, 50, 10)) +
+  PlotFormat 
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+PLOT = "Ta gradient_season by p"
+ggplot(ta_season, aes(x=Datetime, y=slope_Ckm)) +
+  geom_point(aes(colour=cut(pval, c(-Inf, 0.05, Inf))), size=2) + 
+  scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  scale_color_manual(name = "pval",
+                     values = c("black","gray"),
+                     labels = c("S", "NS")) +
+  labs(x="", y=expression("Air Temperature Gradient " (degree*C/km))) +
+  guides(colour=guide_legend(title="p-value")) +
+  #scale_y_continuous(breaks=seq(-100, 100, 10)) +
+  #geom_hline(aes(yintercept=-5.1, linetype="L&E 2006"), color="Red", size=1) +
+  #scale_linetype_manual(name ="", values = c('solid')) +
+  facet_wrap(~factor(season), scales = "free_x") +
+  PlotFormat
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+PLOT = "Td gradient_season by r2"
+ggplot(td_season, aes(x=Datetime, y=slope_Ckm)) +
+  geom_point(aes(colour=r2), size=2) + 
+  labs(x= "Date", y=expression("Dewpoint temperature gradient " (degree*C/km)), color=expression(paste("R"^2))) +
+  scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  facet_wrap(~factor(season) ,scales ="free_x") + 
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) +
+  #scale_y_continuous(breaks=seq(-100, 50, 10)) +
+  PlotFormat 
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+PLOT = "Td gradient_season by p"
+ggplot(td_season, aes(x=Datetime, y=slope_Ckm)) +
+  geom_point(aes(colour=cut(pval, c(-Inf, 0.05, Inf))), size=2) + 
+  scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  scale_color_manual(name = "pval",
+                     values = c("black","gray"),
+                     labels = c("S", "NS")) +
+  labs(x="", y=expression("Dewpoint Temperature Gradient " (degree*C/km))) +
+  guides(colour=guide_legend(title="p-value")) +
+  #scale_y_continuous(breaks=seq(-100, 100, 10)) +
+  #geom_hline(aes(yintercept=-5.1, linetype="L&E 2006"), color="Red", size=1) +
+  #scale_linetype_manual(name ="", values = c('solid')) +
+  facet_wrap(~factor(season), scales = "free_x") +
+  PlotFormat
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+############################################################################
+#compare wind data to ALL Ta and Td data
+
+#bring in wind data that is stored with rad data
+rad21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/Rad_melt21.csv", 
+                  header=TRUE) %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+uz <- rad21 %>%
+  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
+  group_by(dt_agg) %>%
+  summarize(uz = mean(WS_ms)) %>%
+  rename(Datetime = dt_agg)
+
+#ta vs uz
+uz_ta <- merge(uz, ta_season, by="Datetime")
+
+ggplot(uz_ta21, aes(x=uz, y=slope_Ckm)) +
+  geom_point(aes(colour=r2)) +
+  labs(y="Ta gradient", x="windspeed (m/s)", title="all Ta vs. Uz")
+
+#td vs uz
+uz_td <- merge(uz, td_season, by="Datetime")
+
+ggplot(uz_td21, aes(x=uz, y=slope_Ckm)) +
+  geom_point(aes(colour=r2)) +
+  labs(y="Td gradient", x="windspeed (m/s)", title="all Td vs. Uz")
