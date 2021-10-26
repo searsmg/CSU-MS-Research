@@ -28,16 +28,15 @@ PlotFormat = theme(axis.text=element_text(size=16, color="black"),
                    axis.title.x=element_text(size=18, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
                    axis.title.y=element_text(size=18, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
                    plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
-                   legend.title=element_text(size=16, color="black"),                                                                    
-                   legend.text=element_text(size=16, color="black"),                                                                   
+                   legend.title=element_text(size=14, color="black"),                                                                    
+                   legend.text=element_text(size=14, color="black"),                                                                   
                    legend.position = "right", 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
                    panel.background = element_blank(), 
-                   axis.line = element_line(colour = "black"),
-                   strip.text = element_text(size=25))
-
-
+                   #axis.line = element_line(colour = "black"),
+                   strip.text = element_text(size=25),
+                   panel.border = element_rect(colour = "black", fill=NA, size=1))
 ######################################################################
 
 #remvoe the 01 from the minutes
@@ -96,10 +95,15 @@ grid.arrange(slope20, slope21, ncol=2)
 ###############
 
 T20_slope <- T20_slope %>%
-  mutate(year = "2020")
+  mutate(year = "2020") %>%
+  filter(Datetime > ymd_hms("2020-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2020-07-01 00:00:00"))
+  
 
 T21_slope <- T21_slope %>%
-  mutate(year = "2021")
+  mutate(year = "2021") %>%
+  filter(Datetime > ymd_hms("2021-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
 
 slope <- rbind(T20_slope, T21_slope)
 
@@ -114,7 +118,7 @@ uz <- rad21 %>%
   mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
   group_by(dt_agg) %>%
   summarize(uz = mean(WS_ms)) %>%
-  filter(dt_agg > "2021-05-01 00:00") %>%
+  filter(dt_agg > "2021-04-01 00:00") %>%
   rename(Datetime = dt_agg)
 
 uz21 <- merge(uz, T21_slope, by="Datetime")
@@ -149,14 +153,15 @@ ggplot(uzboth, aes(x=uz, y=Slope_degCkm)) +
 
 PLOT = "NSTGE_20&21"
 ggplot(slope, aes(x=Datetime, y=Slope_degCkm)) +
+  PlotFormat +
   geom_point(aes(colour=R2)) + 
-  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1) +
   ylim(-20,30) +
-  labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
+  labs(x= "", y=expression("Air temperature gradient " (degree*C/km)), color=expression(paste("R"^2))) +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
-  facet_wrap(~year, scales="free_x") + PlotFormat +
+  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1) +
+  facet_wrap(~year, scales="free_x") + 
   scale_color_gradient(low='grey', high='black')+
-  scale_linetype_manual(name ="", values = c('solid'))
+  scale_linetype_manual(name ="", values = c('solid')) 
 
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
@@ -167,29 +172,33 @@ slope_edit <- slope %>%
   mutate(hour = hour(Datetime)) %>%
   mutate(doy = yday(Datetime)) %>%
   filter(Slope_degCkm < 40) %>%
-  filter(Slope_degCkm > -32)
+  filter(Slope_degCkm > -32) 
+
+slope_edit$date <- as.Date(format(slope_edit$Datetime, format = "%Y-%m-%d"))
 
 PLOT="heatmap_slope"
-slope <- ggplot(slope_edit, aes(x=doy, y=hour, fill=Slope_degCkm)) +
+slope <- ggplot(slope_edit, aes(x=date, y=hour, fill=Slope_degCkm)) +
   geom_tile() + facet_grid(~year, scale="free_x") +
   scale_fill_distiller(palette = 'RdYlBu')+
-  labs(fill=expression(degree*C/km), x="Day of year", y="Hour") + PlotFormat +
-  scale_y_continuous(breaks=seq(0, 23, 4))
+  labs(fill=expression(degree*C/km), x="", y="Hour") + PlotFormat +
+  scale_y_continuous(breaks=seq(0, 23, 4)) 
 slope
   
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 PLOT = "heatmap_R2"
-r2 <- ggplot(slope_edit, aes(x=doy, y=hour, fill=R2)) +
+r2 <- ggplot(slope_edit, aes(x=date, y=hour, fill=R2)) +
   geom_tile() + facet_grid(~year, scale="free_x") +
-  labs(fill=expression("R"^2), x="Day of year", y="Hour") +
+  labs(fill=expression("R"^2), x="", y="Hour") +
   scale_fill_gradientn(colors=brewer.pal(name="Greys", n=3)) +
-  scale_y_continuous(breaks=seq(0, 23, 4)) + PlotFormat
+  scale_y_continuous(breaks=seq(0, 23, 4)) + PlotFormat 
 r2
   
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
-grid.arrange(slope, r2, nrow=2)
+heatmaps <- grid.arrange(slope, r2, nrow=2)
+ggsave(file="heatmaps.png", heatmaps, width = 15, height = 9)
+
 
 ###################################
 #find average slope and average R2 by day 
