@@ -14,86 +14,54 @@ rm(list = ls())
 #set working directory and csv file
 setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp")
 
-#bring in 20 and 21 temp datasets
-T20 <- read.csv(file = "C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/For R/2020/AirT_elev20_noOUT.csv",
-                header=TRUE) %>%
-  mutate(Datetime = mdy_hm(Datetime))
-
-T21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/For R/2021/Melt21_elev_noOUT.csv",
-                header=TRUE) %>%
-  mutate(Datetime = mdy_hm(Datetime))
-
-################################################
-PlotFormat = theme(axis.text=element_text(size=16, color="black"),
-                   axis.title.x=element_text(size=18, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
-                   axis.title.y=element_text(size=18, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
-                   plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
-                   legend.title=element_text(size=14, color="black"),                                                                    
-                   legend.text=element_text(size=14, color="black"),                                                                   
-                   legend.position = "right", 
-                   panel.grid.major = element_blank(), 
-                   panel.grid.minor = element_blank(),
-                   panel.background = element_blank(), 
-                   #axis.line = element_line(colour = "black"),
-                   strip.text = element_text(size=25),
-                   panel.border = element_rect(colour = "black", fill=NA, size=1))
-######################################################################
-
-#remvoe the 01 from the minutes
-minute(T20$Datetime) <- 0
-minute(T21$Datetime) <- 0
-
-PLOT = "Temp Plot"
-t20 <- ggplot() + geom_point(data=T20, aes(x=Elevation, y=AirT_C, colour=ID))
-t20
-t21 <- ggplot() + geom_point(data=T21, aes(x=Elevation, y=AirT_C,colour=ID))
-grid.arrange(t20,t21, ncol=2)
-t21
-#ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
-
-##########################
-
-T20_long <- T20 %>%
-  select(Datetime, ID, AirT_C) %>%
-  pivot_wider(names_from = ID, values_from=AirT_C)
-
-#write.csv(T20_long, "T20.csv")
-
-T21_long <- T21 %>%
-  select(Datetime, ID, AirT_C) %>%
-  pivot_wider(names_from = ID, values_from=AirT_C)
-
-#write.csv(T21_long, "T21.csv")
-
-####
 T20_slope <- read.csv(file = "C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/T20_nstge.csv",
-                header=TRUE) %>%
+                      header=TRUE) %>%
   mutate(Datetime = mdy_hm(Datetime))
 
 T21_slope <- read.csv(file = "C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Air Temp/T21_nstge.csv",
                       header=TRUE) %>%
   mutate(Datetime = mdy_hm(Datetime))
 
-#########
+###############################################################################
+#FORMATTING FOR PLOTS
 
-slope20 <- ggplot() + geom_point(data=T20_slope, aes(x=Datetime, y=Slope_degCkm)) +
-  ylim(-30,30) +
-  geom_hline(yintercept=6.5) +
-  scale_x_datetime(date_labels = "%b") +
-  PlotFormat + 
-  labs(x="Date", y="NSTGE (deg C/km)")
-slope20
+PlotFormat = theme(axis.text=element_text(size=20, color="black"),
+                   axis.title.x=element_text(size=22, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+                   axis.title.y=element_text(size=22, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+                   plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
+                   legend.title=element_text(size=18, color="black"),                                                                    
+                   legend.text=element_text(size=18, color="black"),                                                                   
+                   legend.position = "right", 
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   #axis.line = element_line(colour = "black"),
+                   strip.text = element_text(size=28),
+                   panel.border = element_rect(colour = "black", fill=NA, size=1),
+                   legend.key=element_blank())
 
-slope21 <- ggplot() + geom_point(data=T21_slope, aes(x=Datetime, y=Slope_degCkm)) +
-  geom_hline(yintercept=6.5)+
-  scale_x_datetime(date_labels = "%b") +
-  PlotFormat + 
-  labs(x="Date", y="NSTGE (deg C/km)")
-slope21
+# a really long way to create minor tick axis tick marks
+every_nth <- function(x, nth, empty = TRUE, inverse = FALSE) 
+{
+  if (!inverse) {
+    if(empty) {
+      x[1:nth == 1] <- ""
+      x
+    } else {
+      x[1:nth != 1]
+    }
+  } else {
+    if(empty) {
+      x[1:nth != 1] <- ""
+      x
+    } else {
+      x[1:nth == 1]
+    }
+  }
+}
+######################################################################
 
-grid.arrange(slope20, slope21, ncol=2)
-###############
-
+#filter 2020 and 2021 to go from May 1 to July 1
 T20_slope <- T20_slope %>%
   mutate(year = "2020") %>%
   filter(Datetime > ymd_hms("2020-04-30 23:00:00")) %>%
@@ -106,67 +74,23 @@ T21_slope <- T21_slope %>%
   filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
 
 slope <- rbind(T20_slope, T21_slope)
-
-#######################################################################
-#add in wind real quick
-#hourly rad data
-rad21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/Rad_melt21.csv", 
-                  header=TRUE) %>%
-  mutate(Datetime = mdy_hm(Datetime))
-
-uz <- rad21 %>%
-  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
-  group_by(dt_agg) %>%
-  summarize(uz = mean(WS_ms)) %>%
-  filter(dt_agg > "2021-04-01 00:00") %>%
-  rename(Datetime = dt_agg)
-
-uz21 <- merge(uz, T21_slope, by="Datetime")
-
-
-ggplot(uz21, aes(x=uz, y=Slope_degCkm)) +
-  geom_point(aes(colour=R2))
-
-#do with 2020 now
-uz_most <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/uz_all.csv", 
-                  header=TRUE) %>%
-  mutate(Datetime = mdy_hm(Datetime))
-
-uz_most <- uz_most %>%
-  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
-  group_by(dt_agg) %>%
-  summarize(uz = mean(WS_ms)) %>%
-  rename(Datetime = dt_agg)
-
-uz20 <- merge(uz_most, T20_slope, by="Datetime")
-
-ggplot(uz20, aes(x=uz, y=Slope_degCkm)) +
-  geom_point(aes(colour=R2)) + ylim(-20,30)
-
-
-uzboth <- rbind(uz20, uz21)
-
-ggplot(uzboth, aes(x=uz, y=Slope_degCkm)) +
-  geom_point(aes(colour=R2)) + ylim(-20,30)
-
-#################################################################
-
-PLOT = "NSTGE_20&21"
+############################################################################
+#plotting TEG 2020 and 2021 with R2
+PLOT = "TEG_20&21"
 ggplot(slope, aes(x=Datetime, y=Slope_degCkm)) +
   PlotFormat +
   geom_point(aes(colour=R2)) + 
-  ylim(-20,30) +
-  labs(x= "", y=expression("Air temperature gradient " (degree*C/km)), color=expression(paste("R"^2))) +
+  ylim(-25,25) +
+  labs(x= "", y=expression("TEG " (degree*C/km)), color=expression(paste("R"^2))) +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
-  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1) +
+  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1.25) +
   facet_wrap(~year, scales="free_x") + 
   scale_color_gradient(low='grey', high='black')+
   scale_linetype_manual(name ="", values = c('solid')) 
 
-
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
-##########################
+#############################################################################
 
 slope_edit <- slope %>%
   mutate(hour = hour(Datetime)) %>%
@@ -177,12 +101,13 @@ slope_edit <- slope %>%
 slope_edit$date <- as.Date(format(slope_edit$Datetime, format = "%Y-%m-%d"))
 
 PLOT="heatmap_slope"
-slope <- ggplot(slope_edit, aes(x=date, y=hour, fill=Slope_degCkm)) +
+slopefig <- ggplot(slope_edit, aes(x=date, y=hour, fill=Slope_degCkm)) +
   geom_tile() + facet_grid(~year, scale="free_x") +
   scale_fill_distiller(palette = 'RdYlBu')+
-  labs(fill=expression(degree*C/km), x="", y="Hour") + PlotFormat +
-  scale_y_continuous(breaks=seq(0, 23, 4)) 
-slope
+  labs(fill=expression("TEG "(degree*C/km)), x="", y="Hour") + PlotFormat +
+  scale_y_continuous(breaks=seq(0, 23, 4)) +
+  scale_x_date(date_labels = "%b", date_break = "1 month")
+slopefig
   
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -191,7 +116,8 @@ r2 <- ggplot(slope_edit, aes(x=date, y=hour, fill=R2)) +
   geom_tile() + facet_grid(~year, scale="free_x") +
   labs(fill=expression("R"^2), x="", y="Hour") +
   scale_fill_gradientn(colors=brewer.pal(name="Greys", n=3)) +
-  scale_y_continuous(breaks=seq(0, 23, 4)) + PlotFormat 
+  scale_y_continuous(breaks=seq(0, 23, 4)) + PlotFormat +
+  scale_x_date(date_labels = "%b", date_break = "1 month")
 r2
   
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
@@ -200,7 +126,7 @@ heatmaps <- grid.arrange(slope, r2, nrow=2)
 ggsave(file="heatmaps.png", heatmaps, width = 15, height = 9)
 
 
-###################################
+##############################################################################
 #find average slope and average R2 by day 
 
 daily_stat <- slope %>%
@@ -293,37 +219,37 @@ slope21_m <- read.csv(file = "T21_m.csv") %>%
 slope20_hd <- slope20_hd %>%
   select(Datetime, Slope_km, R2) %>%
   mutate(year = "2020") %>%
-  mutate(side ="hd")
+  mutate(side ="east")
 
 slope20_m <- slope20_m %>%
   select(Datetime, Slope_km, R2) %>%
   mutate(year = "2020") %>%
-  mutate(side ="m")
+  mutate(side ="west")
 
 slope_20side <- rbind(slope20_hd, slope20_m)
 
-PLOT = "NSTGE_byside_20"
+PLOT = "TEG_byside_20"
 ggplot(slope_20side, aes(x=Datetime, y=Slope_km)) +
   geom_point(aes(colour=R2)) + 
   geom_hline(yintercept=-6.5, size=1, color="Red") +
   ylim(-30,30) +
-  labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
+  labs(x= "Date", y=expression("TEG " (degree*C/km)), color=expression(paste("R"^2))) +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
-  facet_wrap(~side, scales="free_x", labeller=labeller(side = c("hd" = "Hot Dog", "m" = "Montgomery"))) + PlotFormat +
-  scale_color_gradient(low='grey', high='black')
+  facet_wrap(~side, scales="free_x") + PlotFormat +
+  scale_color_gradient(low='grey', high='black') +
+  ylim(-25,25) 
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
-
 
 slope21_hd <- slope21_hd %>%
   select(Datetime, Slope_km, R2) %>%
   mutate(year = "2021") %>%
-  mutate(side ="hd")
+  mutate(side ="east")
 
 slope21_m <- slope21_m %>%
   select(Datetime, Slope_km, R2) %>%
   mutate(year = "2021") %>%
-  mutate(side ="m")
+  mutate(side ="west")
 
 slope_21side <- rbind(slope21_hd, slope21_m)
 
@@ -334,7 +260,7 @@ ggplot(slope_21side, aes(x=Datetime, y=Slope_km)) +
   geom_hline(yintercept=-6.5, size=1, color="Red") +
   labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
-  facet_wrap(~side, scales="free_x", labeller=labeller(side = c("hd" = "Hot Dog", "m" = "Montgomery"))) + PlotFormat +
+  facet_wrap(~side, scales="free_x", labeller=labeller(side = c("east" = "east", "west" = "west"))) + PlotFormat +
   scale_color_gradient(low='grey', high='black')
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
@@ -345,19 +271,18 @@ PLOT = "NSTGE_byside"
 ggplot(slope_side, aes(x=Datetime, y=Slope_km)) +
   geom_point(aes(colour=R2)) + 
   geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1) +
-  ylim(-31,31) +
+  ylim(-25,25)  +
   #geom_hline(yintercept=-6.5, size=1, color="Red") +
-  labs(x= "Date", y=expression("NSTGE " (degree*C/km)), color=expression(paste("R"^2))) +
+  labs(x= "Date", y=expression("TEG " (degree*C/km)), color=expression(paste("R"^2))) +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
-  facet_grid(side ~ year, scales="free_x", labeller=labeller(side = c("hd" = "Hot Dog", "m" = "Montgomery"))) +
+  facet_grid(side ~ year, scales="free_x", labeller=labeller(side = c("east" = "east", "west" = "west"))) +
   scale_color_gradient(low='grey', high='black') + 
   PlotFormat +
-  scale_linetype_manual(name ="", values = c('solid'), guide=guide_legend(reverse=FALSE)) +
-  geom_hline(aes(yintercept=-0))
+  scale_linetype_manual(name ="", values = c('solid'), guide=guide_legend(reverse=FALSE))
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
-
+#side stats
 sideslope <- rbind(slope_20side, slope_21side)
 
 avg_sides <- sideslope %>%
@@ -373,3 +298,81 @@ avg_sides_yr <- sideslope %>%
             avgr2 = mean(R2, na.rm=T),
             Ssd = sd(Slope_km, na.rm=T),
             Rsd = sd(R2, na.rm=T))
+
+############################################################################
+#NOW LOOK AT WIND DATA
+
+#hourly rad data
+rad21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/Rad_melt21.csv", 
+                  header=TRUE) %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+uz <- rad21 %>%
+  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
+  group_by(dt_agg) %>%
+  summarize(uz = mean(WS_ms)) %>%
+  filter(dt_agg > "2021-04-01 00:00") %>%
+  rename(Datetime = dt_agg)
+
+uz21 <- merge(uz, T21_slope, by="Datetime")
+
+uz21_new <- uz21 %>%
+  filter(R2 > 0.2) %>%
+  mutate(bin=cut_width(uz, width=1, boundary=0))
+
+ggplot(uz21_new, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + PlotFormat +
+  labs(x= "Windspeed (m/s)", y=expression("TEG " (degree*C/km)), 
+       color=expression(paste("R"^2))) +
+  scale_color_gradient(low='grey', high='black')
+
+ggplot(uz21_new, aes(x=bin, y=Slope_degCkm)) +
+  geom_boxplot()
+
+#2021 with day vs night
+am_uz21 <- uz21 %>%
+  mutate(hour = hour(Datetime)) %>%
+  filter(hour %in% (8:18))
+
+ggplot(am_uz21, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) +
+  labs(title="am melt 2021")
+
+pm_uz21 <- uz21 %>%
+  mutate(hour = hour(Datetime)) %>%
+  filter(!hour %in% (8:18))
+
+ggplot(pm_uz21, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + 
+  labs(title="pm melt 2021")
+
+#do with 2020 now
+uz_most <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/uz_all.csv", 
+                    header=TRUE) %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+uz_most <- uz_most %>%
+  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
+  group_by(dt_agg) %>%
+  summarize(uz = mean(WS_ms)) %>%
+  rename(Datetime = dt_agg)
+
+uz20 <- merge(uz_most, T20_slope, by="Datetime")
+
+uz20_new <- uz20 %>%
+  filter(R2 > 0.25)
+
+ggplot(uz20_new, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + PlotFormat +
+  labs(x= "Windspeed (m/s)", y=expression("TEG " (degree*C/km)), 
+       color=expression(paste("R"^2))) +
+  scale_color_gradient(low='grey', high='black')
+
+ggplot(uz20, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + ylim(-20,30)
+
+
+uzboth <- rbind(uz20, uz21)
+
+ggplot(uzboth, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + ylim(-20,30)
