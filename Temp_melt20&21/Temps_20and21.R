@@ -318,7 +318,9 @@ uz21 <- merge(uz, T21_slope, by="Datetime")
 
 uz21_new <- uz21 %>%
   filter(R2 > 0.2) %>%
-  mutate(bin=cut_width(uz, width=1, boundary=0))
+  mutate(bin=cut_width(uz, width=1, boundary=0)) %>%
+  mutate(sign = ifelse(Slope_degCkm > 0, "positive TEG",
+                       "negative TEG"))
 
 ggplot(uz21_new, aes(x=uz, y=Slope_degCkm)) +
   geom_point(aes(colour=R2)) + PlotFormat +
@@ -327,7 +329,8 @@ ggplot(uz21_new, aes(x=uz, y=Slope_degCkm)) +
   scale_color_gradient(low='grey', high='black')
 
 ggplot(uz21_new, aes(x=bin, y=Slope_degCkm)) +
-  geom_boxplot()
+  geom_boxplot()+
+  facet_grid(sign~.) 
 
 #2021 with day vs night
 am_uz21 <- uz21 %>%
@@ -360,7 +363,10 @@ uz_most <- uz_most %>%
 uz20 <- merge(uz_most, T20_slope, by="Datetime")
 
 uz20_new <- uz20 %>%
-  filter(R2 > 0.25)
+  filter(R2 > 0.20) %>%
+  mutate(bin=cut_width(uz, width=1, boundary=0)) %>%
+  mutate(sign = ifelse(Slope_degCkm > 0, "positive TEG",
+                       "negative TEG"))
 
 ggplot(uz20_new, aes(x=uz, y=Slope_degCkm)) +
   geom_point(aes(colour=R2)) + PlotFormat +
@@ -371,8 +377,22 @@ ggplot(uz20_new, aes(x=uz, y=Slope_degCkm)) +
 ggplot(uz20, aes(x=uz, y=Slope_degCkm)) +
   geom_point(aes(colour=R2)) + ylim(-20,30)
 
+ggplot(uz20_new, aes(x=bin, y=Slope_degCkm)) +
+  geom_boxplot()+
+  facet_grid(sign~.)
 
 uzboth <- rbind(uz20, uz21)
 
-ggplot(uzboth, aes(x=uz, y=Slope_degCkm)) +
-  geom_point(aes(colour=R2)) + ylim(-20,30)
+uz_new <- rbind(uz21_new, uz20_new)
+
+uz_new <- uz_new %>%
+  mutate(year = year(Datetime))
+
+PLOT="uz_boxplot"
+ggplot(uz_new, aes(x=bin, y=Slope_degCkm)) +
+  geom_boxplot()+
+  facet_grid(year~sign) +
+  #PlotFormat +
+  scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9"))
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
