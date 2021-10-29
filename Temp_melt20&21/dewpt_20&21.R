@@ -19,19 +19,20 @@ rm(list = ls())
 setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Dewpt Temp/For R/")
 
 #add a plot format for later
-PlotFormat = theme(axis.text=element_text(size=16, color="black"),
-                   axis.title.x=element_text(size=18, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
-                   axis.title.y=element_text(size=18, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+PlotFormat = theme(axis.text=element_text(size=20, color="black"),
+                   axis.title.x=element_text(size=22, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+                   axis.title.y=element_text(size=22, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
                    plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
-                   legend.title=element_text(size=16, color="black"),                                                                    
-                   legend.text=element_text(size=16, color="black"),                                                                   
+                   legend.title=element_text(size=18, color="black"),                                                                    
+                   legend.text=element_text(size=18, color="black"),                                                                   
                    legend.position = "right", 
-                   panel.grid.major = element_blank(), 
-                   panel.grid.minor = element_blank(),
+                   #panel.grid.major = element_blank(), 
+                   #panel.grid.minor = element_blank(),
                    panel.background = element_blank(), 
-                   axis.line = element_line(colour = "black"),
-                   strip.text = element_text(size=25))
-
+                   #axis.line = element_line(colour = "black"),
+                   strip.text = element_text(size=28),
+                   panel.border = element_rect(colour = "black", fill=NA, size=1),
+                   legend.key=element_blank())
 
 #############################################################################
 #set up data
@@ -133,15 +134,19 @@ dew21 <- slope21  %>%
 
 slope <- rbind(dew20, dew21)
 
+slope <- slope %>%
+  filter(slope_Ckm > -30,
+         slope_Ckm < 30)
+
 PLOT = "Dewpt gradient_20&21 by r2"
 ggplot(slope, aes(x=Datetime, y=slope_Ckm)) +
   geom_point(aes(colour=r2), size=2) + 
-  labs(x= "Date", y=expression("Dewpoint Tempeature Gradient " (degree*C/km)), color=expression(paste("R"^2))) +
+  labs(x= "Date", y=expression("DTEG " (degree*C/km)), color=expression(paste("R"^2))) +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
-  facet_wrap(~year, scales="free_x") + PlotFormat +
+  facet_wrap(~year, scales="free_x") + theme_bw() + PlotFormat +
   scale_color_gradient(low='grey', high='black')+
   scale_linetype_manual(name ="", values = c('solid')) +
-  scale_y_continuous(breaks=seq(-100, 50, 10))
+  scale_y_continuous(breaks=seq(-30, 30, 10))
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -158,48 +163,6 @@ ggplot(slope, aes(x=Datetime, y=slope_Ckm)) +
   guides(colour=guide_legend(title="p-value"))
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
-
-############################################################################
-#add in wind real quick
-#hourly rad data
-rad21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/Rad_melt21.csv", 
-                  header=TRUE) %>%
-  mutate(Datetime = mdy_hm(Datetime))
-
-uz <- rad21 %>%
-  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
-  group_by(dt_agg) %>%
-  summarize(uz = mean(WS_ms)) %>%
-  filter(dt_agg > "2021-05-01 00:00") %>%
-  rename(Datetime = dt_agg)
-
-uz21 <- merge(uz, dew21, by="Datetime")
-
-
-ggplot(uz21, aes(x=uz, y=slope_Ckm)) +
-  geom_point(aes(colour=r2)) + ylim(-30,30)
-
-#do with 2020 now
-uz_most <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/uz_all.csv", 
-                    header=TRUE) %>%
-  mutate(Datetime = mdy_hm(Datetime))
-
-uz_most <- uz_most %>%
-  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
-  group_by(dt_agg) %>%
-  summarize(uz = mean(WS_ms)) %>%
-  rename(Datetime = dt_agg)
-
-uz20 <- merge(uz_most, dew20, by="Datetime")
-
-ggplot(uz20, aes(x=uz, y=slope_Ckm)) +
-  geom_point(aes(colour=r2)) + ylim(-30,30)
-
-
-uzboth <- rbind(uz20, uz21)
-
-ggplot(uzboth, aes(x=uz, y=slope_Ckm)) +
-  geom_point(aes(colour=r2)) + ylim(-30,30)
 
 ############################################################################
 #plot by time of day - heat maps
@@ -240,6 +203,121 @@ p <- ggplot(slope_edit, aes(x=doy, y=hour, fill=cut(pval, c(-Inf, 0.05, Inf)))) 
 p
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+#############################################################################
+#############################################################################
+#add in wind real quick
+#hourly rad data
+#NOW LOOK AT WIND DATA
+
+#hourly rad data
+rad21 <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/Rad_melt21.csv", 
+                  header=TRUE) %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+uz <- rad21 %>%
+  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
+  group_by(dt_agg) %>%
+  summarize(uz = mean(WS_ms)) %>%
+  filter(dt_agg > "2021-04-01 00:00") %>%
+  rename(Datetime = dt_agg)
+
+uz21 <- merge(uz, T21_slope, by="Datetime")
+
+uz21_new <- uz21 %>%
+  filter(R2 > 0.2) %>%
+  mutate(bin=cut_width(uz, width=1, boundary=0)) %>%
+  mutate(sign = ifelse(Slope_degCkm > 0, "positive TEG",
+                       "negative TEG"))
+
+ggplot(uz21_new, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + PlotFormat +
+  labs(x= "Windspeed (m/s)", y=expression("TEG " (degree*C/km)), 
+       color=expression(paste("R"^2))) +
+  scale_color_gradient(low='grey', high='black')
+
+ggplot(uz21_new, aes(x=bin, y=Slope_degCkm)) +
+  geom_boxplot()+
+  facet_grid(sign~.) 
+
+#2021 with day vs night
+am_uz21 <- uz21 %>%
+  mutate(hour = hour(Datetime)) %>%
+  filter(hour %in% (8:18))
+
+ggplot(am_uz21, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) +
+  labs(title="am melt 2021")
+
+pm_uz21 <- uz21 %>%
+  mutate(hour = hour(Datetime)) %>%
+  filter(!hour %in% (8:18))
+
+ggplot(pm_uz21, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + 
+  labs(title="pm melt 2021")
+
+#do with 2020 now
+uz_most <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/uz_all.csv", 
+                    header=TRUE) %>%
+  mutate(Datetime = mdy_hm(Datetime))
+
+uz_most <- uz_most %>%
+  mutate(dt_agg = floor_date(Datetime, unit = "hour")) %>%
+  group_by(dt_agg) %>%
+  summarize(uz = mean(WS_ms)) %>%
+  rename(Datetime = dt_agg)
+
+uz20 <- merge(uz_most, T20_slope, by="Datetime")
+
+uz20_new <- uz20 %>%
+  filter(R2 > 0.20) %>%
+  mutate(bin=cut_width(uz, width=1, boundary=0)) %>%
+  mutate(sign = ifelse(Slope_degCkm > 0, "positive TEG",
+                       "negative TEG"))
+
+ggplot(uz20_new, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + PlotFormat +
+  labs(x= "Windspeed (m/s)", y=expression("TEG " (degree*C/km)), 
+       color=expression(paste("R"^2))) +
+  scale_color_gradient(low='grey', high='black')
+
+ggplot(uz20, aes(x=uz, y=Slope_degCkm)) +
+  geom_point(aes(colour=R2)) + ylim(-20,30)
+
+ggplot(uz20_new, aes(x=bin, y=Slope_degCkm)) +
+  geom_boxplot()+
+  facet_grid(sign~.)
+
+uzboth <- rbind(uz20, uz21)
+
+uz_new <- rbind(uz21_new, uz20_new)
+
+uz_new <- uz_new %>%
+  mutate(year = year(Datetime))
+
+PLOT="uz_boxplot"
+ggplot(uz_new, aes(x=bin, y=Slope_degCkm)) +
+  geom_boxplot()+
+  facet_grid(year~sign) +
+  #PlotFormat +
+  scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
+  theme_bw() + PlotFormat+
+  labs(x="Windspeed (m/s)", y=expression("TEG " (degree*C/km))) 
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ###############################################################################
 ###############################################################################
