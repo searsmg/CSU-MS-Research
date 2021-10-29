@@ -32,8 +32,8 @@ PlotFormat = theme(axis.text=element_text(size=20, color="black"),
                    legend.title=element_text(size=18, color="black"),                                                                    
                    legend.text=element_text(size=18, color="black"),                                                                   
                    legend.position = "right", 
-                   panel.grid.major = element_blank(), 
-                   panel.grid.minor = element_blank(),
+                   #panel.grid.major = element_blank(), 
+                   #panel.grid.minor = element_blank(),
                    panel.background = element_blank(), 
                    #axis.line = element_line(colour = "black"),
                    strip.text = element_text(size=28),
@@ -78,7 +78,6 @@ slope <- rbind(T20_slope, T21_slope)
 #plotting TEG 2020 and 2021 with R2
 PLOT = "TEG_20&21"
 ggplot(slope, aes(x=Datetime, y=Slope_degCkm)) +
-  PlotFormat +
   geom_point(aes(colour=R2)) + 
   ylim(-25,25) +
   labs(x= "", y=expression("TEG " (degree*C/km)), color=expression(paste("R"^2))) +
@@ -86,7 +85,8 @@ ggplot(slope, aes(x=Datetime, y=Slope_degCkm)) +
   geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1.25) +
   facet_wrap(~year, scales="free_x") + 
   scale_color_gradient(low='grey', high='black')+
-  scale_linetype_manual(name ="", values = c('solid')) 
+  scale_linetype_manual(name ="", values = c('solid')) +
+  theme_bw() + PlotFormat
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -390,9 +390,11 @@ uz_new <- uz_new %>%
 
 PLOT="uz_boxplot"
 ggplot(uz_new, aes(x=bin, y=Slope_degCkm)) +
-  geom_boxplot()+
+   geom_boxplot()+
   facet_grid(year~sign) +
   #PlotFormat +
-  scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9"))
+  scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
+  theme_bw() + PlotFormat+
+  labs(x="Windspeed (m/s)", y=expression("TEG " (degree*C/km))) 
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
