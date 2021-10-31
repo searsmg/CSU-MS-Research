@@ -126,13 +126,30 @@ slope21 <- slope21 %>%
 
 dew20 <- slope20 %>%
   mutate(year = "2020") %>%
-  select(-c(data, model, pear))
+  select(-c(data, model, pear)) %>%
+  filter(Datetime > ymd_hms("2020-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2020-07-01 00:00:00"))
 
 dew21 <- slope21  %>%
   mutate(year = "2021") %>%
-  select(-c(data, model, pear))
+  select(-c(data, model, pear)) %>%
+  filter(Datetime > ymd_hms("2021-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
 
 slope <- rbind(dew20, dew21)
+
+slope_stat <- slope %>%
+  summarize(slope = mean(slope_Ckm, na.rm=T),
+         slopesd = sd(slope_Ckm, na.rm=T),
+         r2 = mean(r2, na.rm=T),
+         r2stdev = sd(r2, na.rm=T))
+
+slope_stat_yr <- slope %>%
+  group_by(year) %>%
+  summarize(slope = mean(slope_Ckm, na.rm=T),
+            slopesd = sd(slope_Ckm, na.rm=T),
+            r2 = mean(r2, na.rm=T),
+            r2stdev = sd(r2, na.rm=T))
 
 slope <- slope %>%
   filter(slope_Ckm > -30,
@@ -141,13 +158,15 @@ slope <- slope %>%
 PLOT = "Dewpt gradient_20&21 by r2"
 ggplot(slope, aes(x=Datetime, y=slope_Ckm)) +
   geom_point(aes(colour=r2), size=2) + 
+  geom_hline(aes(yintercept=-5.1, linetype="Kunkel 1989"), color="Red", size=1) +
   labs(x= "Date", y=expression("DTEG " (degree*C/km)), color=expression(paste("R"^2))) +
   scale_x_datetime(date_labels = "%b", date_break = "1 month") +
-  facet_wrap(~year, scales="free_x") + theme_bw() + PlotFormat +
+  facet_wrap(~year, scales="free_x") + PlotFormat +
   scale_color_gradient(low='grey', high='black')+
   scale_linetype_manual(name ="", values = c('solid')) +
-  scale_y_continuous(breaks=seq(-30, 30, 10))
-
+  scale_y_continuous(breaks=seq(-30, 30, 10)) +
+  guides(linetype = guide_legend(order=1))
+  
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 
@@ -171,22 +190,31 @@ slope_edit <- slope %>%
   mutate(hour = hour(Datetime)) %>%
   mutate(doy = yday(Datetime)) 
 
+slope_edit$date <- as.Date(format(slope_edit$Datetime, format = "%Y-%m-%d"))
+
+
 PLOT="heatmap_slope"
-slopefig <- ggplot(slope_edit, aes(x=doy, y=hour, fill=slope_Ckm)) +
+slopefig <- ggplot(slope_edit, aes(x=date, y=hour, fill=slope_Ckm)) +
   geom_tile() + facet_grid(~year, scale="free_x") +
   scale_fill_distiller(palette = 'RdYlBu')+
-  labs(fill=expression(degree*C/km), x="Day of year", y="Hour") + PlotFormat +
-  scale_y_continuous(breaks=seq(0, 23, 4))
+  labs(fill="DTEG", x="Day of year", y="Hour") + PlotFormat +
+  scale_x_date(date_labels = "%b", date_break = "1 month") +
+  scale_y_continuous(breaks=seq(0, 23, 4)) +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 slopefig
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 PLOT = "heatmap_R2"
-r2 <- ggplot(slope_edit, aes(x=doy, y=hour, fill=r2)) +
+r2 <- ggplot(slope_edit, aes(x=date, y=hour, fill=r2)) +
   geom_tile() + facet_grid(~year, scale="free_x") +
+  scale_x_date(date_labels = "%b", date_break = "1 month") +
   labs(fill=expression("R"^2), x="Day of year", y="Hour") +
   scale_fill_gradientn(colors=brewer.pal(name="Greys", n=3)) +
-  scale_y_continuous(breaks=seq(0, 23, 4)) + PlotFormat
+  scale_y_continuous(breaks=seq(0, 23, 4)) + PlotFormat +
+  theme(strip.text = element_blank())
 r2
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
@@ -203,6 +231,9 @@ p <- ggplot(slope_edit, aes(x=doy, y=hour, fill=cut(pval, c(-Inf, 0.05, Inf)))) 
 p
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+
+
 #############################################################################
 #############################################################################
 #add in wind real quick
@@ -221,40 +252,23 @@ uz <- rad21 %>%
   filter(dt_agg > "2021-04-01 00:00") %>%
   rename(Datetime = dt_agg)
 
-uz21 <- merge(uz, T21_slope, by="Datetime")
+uz21 <- merge(uz, dew21, by="Datetime")
 
 uz21_new <- uz21 %>%
-  filter(R2 > 0.2) %>%
+  filter(r2 > 0.2) %>%
   mutate(bin=cut_width(uz, width=1, boundary=0)) %>%
-  mutate(sign = ifelse(Slope_degCkm > 0, "positive TEG",
-                       "negative TEG"))
+  mutate(sign = ifelse(slope_Ckm > 0, "positive DTEG",
+                       "negative DTEG"))
 
-ggplot(uz21_new, aes(x=uz, y=Slope_degCkm)) +
-  geom_point(aes(colour=R2)) + PlotFormat +
-  labs(x= "Windspeed (m/s)", y=expression("TEG " (degree*C/km)), 
+ggplot(uz21_new, aes(x=uz, y=slope_Ckm)) +
+  geom_point(aes(colour=r2)) + PlotFormat +
+  labs(x= "Windspeed (m/s)", y=expression("DTEG " (degree*C/km)), 
        color=expression(paste("R"^2))) +
   scale_color_gradient(low='grey', high='black')
 
-ggplot(uz21_new, aes(x=bin, y=Slope_degCkm)) +
+ggplot(uz21_new, aes(x=bin, y=slope_Ckm)) +
   geom_boxplot()+
   facet_grid(sign~.) 
-
-#2021 with day vs night
-am_uz21 <- uz21 %>%
-  mutate(hour = hour(Datetime)) %>%
-  filter(hour %in% (8:18))
-
-ggplot(am_uz21, aes(x=uz, y=Slope_degCkm)) +
-  geom_point(aes(colour=R2)) +
-  labs(title="am melt 2021")
-
-pm_uz21 <- uz21 %>%
-  mutate(hour = hour(Datetime)) %>%
-  filter(!hour %in% (8:18))
-
-ggplot(pm_uz21, aes(x=uz, y=Slope_degCkm)) +
-  geom_point(aes(colour=R2)) + 
-  labs(title="pm melt 2021")
 
 #do with 2020 now
 uz_most <- read.csv(file="C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiation/For R/uz_all.csv", 
@@ -267,16 +281,16 @@ uz_most <- uz_most %>%
   summarize(uz = mean(WS_ms)) %>%
   rename(Datetime = dt_agg)
 
-uz20 <- merge(uz_most, T20_slope, by="Datetime")
+uz20 <- merge(uz_most, dew20, by="Datetime")
 
 uz20_new <- uz20 %>%
-  filter(R2 > 0.20) %>%
+  filter(r2 > 0.20) %>%
   mutate(bin=cut_width(uz, width=1, boundary=0)) %>%
-  mutate(sign = ifelse(Slope_degCkm > 0, "positive TEG",
-                       "negative TEG"))
+  mutate(sign = ifelse(slope_Ckm > 0, "positive DTEG",
+                       "negative DTEG"))
 
-ggplot(uz20_new, aes(x=uz, y=Slope_degCkm)) +
-  geom_point(aes(colour=R2)) + PlotFormat +
+ggplot(uz20_new, aes(x=uz, y=slope_Ckm)) +
+  geom_point(aes(colour=r2)) + PlotFormat +
   labs(x= "Windspeed (m/s)", y=expression("TEG " (degree*C/km)), 
        color=expression(paste("R"^2))) +
   scale_color_gradient(low='grey', high='black')
@@ -293,31 +307,230 @@ uzboth <- rbind(uz20, uz21)
 uz_new <- rbind(uz21_new, uz20_new)
 
 uz_new <- uz_new %>%
-  mutate(year = year(Datetime))
+  mutate(year = year(Datetime)) %>%
+  filter(slope_Ckm > -30,
+         slope_Ckm < 30)
 
-PLOT="uz_boxplot"
-ggplot(uz_new, aes(x=bin, y=Slope_degCkm)) +
+PLOT="uz_boxplot_dew"
+ggplot(uz_new, aes(x=bin, y=slope_Ckm)) +
   geom_boxplot()+
-  facet_grid(year~sign) +
+  facet_grid(sign~year) +
   #PlotFormat +
   scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
-  theme_bw() + PlotFormat+
-  labs(x="Windspeed (m/s)", y=expression("TEG " (degree*C/km))) 
+  PlotFormat+
+  labs(x="Windspeed (m/s)", y=expression("DTEG " (degree*C/km))) 
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
+###############################################################################
+###############################################################################
+#need to look at dewpoint temp by transect
+
+all20$side = substr(all20$ID,1,2)
+
+#2020 HD
+dew20_hd <- all20 %>%
+  filter(side == "HD") %>%
+  group_by(Datetime) %>%
+  mutate(NAcount = sum(is.na(dewpoint))) %>% 
+  filter(!any(NAcount > 2)) %>%
+  filter(Datetime > ymd_hms("2020-05-1 11:00:00")) %>%
+  filter(Datetime < ymd_hms("2020-07-01 00:00:00"))
+  
+
+#slope and r2 for 2020 daily - HD
+fit_model <- function(dew20_hd) lm(dewpoint ~ Elevation, data = dew20_hd)
+get_slope <- function(mod) tidy(mod)$estimate[2]
+pearson <- function(dew20_hd) cor.test(dew20_hd$Elevation, dew20_hd$dewpoint, data=dew20_hd) #pearson cor test
+pval <- function(pear) tidy(pear)$p.value #p value from cor test
+df <- function(pear) tidy(pear)$parameter[1] #deg of freedom from cor test
+
+dew20_r_hd <- dew20_hd %>%
+  select(-c(ID)) %>%
+  group_by(Datetime) %>%
+  summarize(r2 = cor(Elevation, dewpoint, use="complete.obs")^2)
+
+slope20_hd <- dew20_hd %>%
+  group_nest(Datetime) %>%
+  mutate(model = map(data, fit_model)) %>%
+  mutate(slope = map_dbl(model, get_slope)) %>%
+  mutate(slope_Ckm = slope*1000) %>%
+  mutate(pear = map(data, pearson)) %>%
+  mutate(pval = map_dbl(pear, pval)) %>%
+  mutate(df = map_dbl(pear, df))
+
+slope20_hd <- slope20_hd %>%
+  add_column(r2 = dew20_r_hd$r2) %>%
+  mutate(side="east")
+
+#2020 MP
+dew20_mp <- all20 %>%
+  filter(side == "MP") %>%
+  group_by(Datetime) %>%
+  mutate(NAcount = sum(is.na(dewpoint))) %>% 
+  filter(!any(NAcount > 2)) %>%
+  filter(Datetime > ymd_hms("2020-05-01 00:00:00")) %>%
+  filter(Datetime < ymd_hms("2020-07-01 00:00:00"))
 
 
+#slope and r2 for 2020 daily - MP
+fit_model <- function(dew20_mp) lm(dewpoint ~ Elevation, data = dew20_mp)
+get_slope <- function(mod) tidy(mod)$estimate[2]
+pearson <- function(dew20_mp) cor.test(dew20_mp$Elevation, dew20_mp$dewpoint, data=dew20_mp) #pearson cor test
+pval <- function(pear) tidy(pear)$p.value #p value from cor test
+df <- function(pear) tidy(pear)$parameter[1] #deg of freedom from cor test
+
+dew20_r_mp <- dew20_mp %>%
+  select(-c(ID)) %>%
+  group_by(Datetime) %>%
+  summarize(r2 = cor(Elevation, dewpoint, use="complete.obs")^2)
+
+slope20_mp <- dew20_mp %>%
+  group_nest(Datetime) %>%
+  mutate(model = map(data, fit_model)) %>%
+  mutate(slope = map_dbl(model, get_slope)) %>%
+  mutate(slope_Ckm = slope*1000) %>%
+  mutate(pear = map(data, pearson)) %>%
+  mutate(pval = map_dbl(pear, pval)) %>%
+  mutate(df = map_dbl(pear, df))
+
+slope20_mp <- slope20_mp %>%
+  add_column(r2 = dew20_r_mp$r2) %>%
+  mutate(side="west")
+
+slope20_mp <- slope20_mp %>%
+  select(-c(data, model))
+
+slope20_hd <- slope20_hd %>%
+  select(-c(data, model))
+
+slope20_side <- rbind(slope20_hd, slope20_mp)
+
+#####
+#now do transect for 2021
+
+all21$side = substr(all21$ID,1,2)
+
+#2021 HD
+dew21_hd <- all21 %>%
+  filter(side == "HD") %>%
+  group_by(Datetime) %>%
+  mutate(NAcount = sum(is.na(dewpoint))) %>% 
+  filter(!any(NAcount > 2)) %>%
+  filter(Datetime > ymd_hms("2021-05-1 11:00:00")) %>%
+  filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
 
 
+#slope and r2 for 2020 daily - HD
+fit_model <- function(dew21_hd) lm(dewpoint ~ Elevation, data = dew21_hd)
+get_slope <- function(mod) tidy(mod)$estimate[2]
+pearson <- function(dew21_hd) cor.test(dew21_hd$Elevation, dew21_hd$dewpoint, data=dew21_hd) #pearson cor test
+pval <- function(pear) tidy(pear)$p.value #p value from cor test
+df <- function(pear) tidy(pear)$parameter[1] #deg of freedom from cor test
+
+dew21_r_hd <- dew21_hd %>%
+  select(-c(ID)) %>%
+  group_by(Datetime) %>%
+  summarize(r2 = cor(Elevation, dewpoint, use="complete.obs")^2)
+
+slope21_hd <- dew21_hd %>%
+  group_nest(Datetime) %>%
+  mutate(model = map(data, fit_model)) %>%
+  mutate(slope = map_dbl(model, get_slope)) %>%
+  mutate(slope_Ckm = slope*1000) %>%
+  mutate(pear = map(data, pearson)) %>%
+  mutate(pval = map_dbl(pear, pval)) %>%
+  mutate(df = map_dbl(pear, df))
+
+slope21_hd <- slope21_hd %>%
+  add_column(r2 = dew21_r_hd$r2) %>%
+  mutate(side="east")
+
+#2021 MP
+dew21_mp <- all21 %>%
+  filter(side == "MP") %>%
+  group_by(Datetime) %>%
+  mutate(NAcount = sum(is.na(dewpoint))) %>% 
+  filter(!any(NAcount > 2)) %>%
+  filter(Datetime > ymd_hms("2021-05-01 00:00:00")) %>%
+  filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
 
 
+#slope and r2 for 2020 daily - MP
+fit_model <- function(dew21_mp) lm(dewpoint ~ Elevation, data = dew21_mp)
+get_slope <- function(mod) tidy(mod)$estimate[2]
+pearson <- function(dew21_mp) cor.test(dew21_mp$Elevation, dew21_mp$dewpoint, data=dew21_mp) #pearson cor test
+pval <- function(pear) tidy(pear)$p.value #p value from cor test
+df <- function(pear) tidy(pear)$parameter[1] #deg of freedom from cor test
+
+dew21_r_mp <- dew21_mp %>%
+  select(-c(ID)) %>%
+  group_by(Datetime) %>%
+  summarize(r2 = cor(Elevation, dewpoint, use="complete.obs")^2)
+
+slope21_mp <- dew21_mp %>%
+  group_nest(Datetime) %>%
+  mutate(model = map(data, fit_model)) %>%
+  mutate(slope = map_dbl(model, get_slope)) %>%
+  mutate(slope_Ckm = slope*1000) %>%
+  mutate(pear = map(data, pearson)) %>%
+  mutate(pval = map_dbl(pear, pval)) %>%
+  mutate(df = map_dbl(pear, df))
+
+slope21_mp <- slope21_mp %>%
+  add_column(r2 = dew21_r_mp$r2) %>%
+  mutate(side="west")
+
+slope21_mp <- slope21_mp %>%
+  select(-c(data, model))
+
+slope21_hd <- slope21_hd %>%
+  select(-c(data, model))
+
+slope21_side <- rbind(slope21_hd, slope21_mp)
+
+slope21_side <- slope21_side %>%
+  mutate(year = 2021)
+
+slope20_side <- slope20_side %>%
+  mutate(year = 2020)
+
+slope_allside <- rbind(slope20_side, slope21_side)
+
+slope_stat_side <- slope_allside %>%
+  group_by(side) %>%
+  summarize(avgslope = mean(slope_Ckm, na.rm=T),
+            avgr2 = mean(r2, na.rm=T),
+            Ssd = sd(slope_Ckm, na.rm=T),
+            Rsd = sd(r2, na.rm=T))
+
+slope_stat_side_yr <- slope_allside %>%
+  group_by(side, year) %>%
+  summarize(avgslope = mean(slope_Ckm, na.rm=T),
+            avgr2 = mean(r2, na.rm=T),
+            Ssd = sd(slope_Ckm, na.rm=T),
+            Rsd = sd(r2, na.rm=T))
 
 
+slope_allside <- slope_allside %>%
+filter(slope_Ckm > -30,
+       slope_Ckm < 30)
 
 
+PLOT = "dTEG_byside"
+ggplot(slope_allside, aes(x=Datetime, y=slope_Ckm)) +
+  geom_point(aes(colour=r2)) + 
+  geom_hline(aes(yintercept=-5.1, linetype="Kunkel 1989"), color="Red", size=1) +
+  #geom_hline(yintercept=-6.5, size=1, color="Red") +
+  labs(x= "Date", y=expression("DTEG " (degree*C/km)), color=expression(paste("R"^2))) +
+  scale_x_datetime(date_labels = "%b", date_break = "1 month") +
+  facet_grid(side ~ year, scales="free_x", labeller=labeller(side = c("east" = "east", "west" = "west"))) +
+  scale_color_gradient(low='grey', high='black') + 
+  PlotFormat +
+  scale_linetype_manual(name ="", values = c('solid'), guide=guide_legend(reverse=FALSE)) +
+  guides(linetype = guide_legend(order=1))
 
-
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 ###############################################################################
 ###############################################################################
