@@ -104,9 +104,12 @@ PLOT="heatmap_slope"
 slopefig <- ggplot(slope_edit, aes(x=date, y=hour, fill=Slope_degCkm)) +
   geom_tile() + facet_grid(~year, scale="free_x") +
   scale_fill_distiller(palette = 'RdYlBu')+
-  labs(fill=expression("TEG "(degree*C/km)), x="", y="Hour") + PlotFormat +
+  labs(fill="TEG", x="", y="Hour") + PlotFormat +
   scale_y_continuous(breaks=seq(0, 23, 4)) +
-  scale_x_date(date_labels = "%b", date_break = "1 month")
+  scale_x_date(date_labels = "%b", date_break = "1 month") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 slopefig
   
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
@@ -117,12 +120,13 @@ r2 <- ggplot(slope_edit, aes(x=date, y=hour, fill=R2)) +
   labs(fill=expression("R"^2), x="", y="Hour") +
   scale_fill_gradientn(colors=brewer.pal(name="Greys", n=3)) +
   scale_y_continuous(breaks=seq(0, 23, 4)) + PlotFormat +
-  scale_x_date(date_labels = "%b", date_break = "1 month")
+  scale_x_date(date_labels = "%b", date_break = "1 month") +
+  theme(strip.text = element_blank())
 r2
   
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
-heatmaps <- grid.arrange(slope, r2, nrow=2)
+heatmaps <- grid.arrange(slopefig, r2, nrow=2)
 ggsave(file="heatmaps.png", heatmaps, width = 15, height = 9)
 
 
@@ -219,12 +223,16 @@ slope21_m <- read.csv(file = "T21_m.csv") %>%
 slope20_hd <- slope20_hd %>%
   select(Datetime, Slope_km, R2) %>%
   mutate(year = "2020") %>%
-  mutate(side ="east")
+  mutate(side ="east") %>%
+  filter(Datetime > ymd_hms("2020-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2020-07-01 00:00:00"))
 
 slope20_m <- slope20_m %>%
   select(Datetime, Slope_km, R2) %>%
   mutate(year = "2020") %>%
-  mutate(side ="west")
+  mutate(side ="west") %>%
+  filter(Datetime > ymd_hms("2020-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2020-07-01 00:00:00"))
 
 slope_20side <- rbind(slope20_hd, slope20_m)
 
@@ -244,12 +252,16 @@ ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 slope21_hd <- slope21_hd %>%
   select(Datetime, Slope_km, R2) %>%
   mutate(year = "2021") %>%
-  mutate(side ="east")
+  mutate(side ="east") %>%
+  filter(Datetime > ymd_hms("2021-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
 
 slope21_m <- slope21_m %>%
   select(Datetime, Slope_km, R2) %>%
   mutate(year = "2021") %>%
-  mutate(side ="west")
+  mutate(side ="west") %>%
+  filter(Datetime > ymd_hms("2021-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
 
 slope_21side <- rbind(slope21_hd, slope21_m)
 
@@ -391,10 +403,23 @@ uz_new <- uz_new %>%
 PLOT="uz_boxplot"
 ggplot(uz_new, aes(x=bin, y=Slope_degCkm)) +
    geom_boxplot()+
-  facet_grid(year~sign) +
+  facet_grid(sign~year) +
   #PlotFormat +
   scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
-  theme_bw() + PlotFormat+
+  PlotFormat+
   labs(x="Windspeed (m/s)", y=expression("TEG " (degree*C/km))) 
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+#get some wind stats
+uz_stats_yr <- uz_new %>%
+  group_by(bin) %>%
+  summarize(count = n(),
+            meanTEG = mean(Slope_degCkm),
+            sdTEG = sd(Slope_degCkm))
+
+uz_stats_yr <- uz_new %>%
+  group_by(bin, year) %>%
+  summarize(count = n(),
+            meanTEG = mean(Slope_degCkm),
+            sdTEG = sd(Slope_degCkm))
