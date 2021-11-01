@@ -366,13 +366,13 @@ safe_pal <- carto_pal(12, "Safe")
 PLOT="allmelt"
 custombreaks <- seq(0, 700, 50)
 ggplot() + 
-  geom_line(data=mp4a, aes(Date, swe_a, color="a"), size=1.25) +
-  geom_line(data=mp4b1, aes(Date, swe_b1, color="b1"), size=1.25) +
-  geom_line(data=mp4b2, aes(Date, swe_b2, color="b2"), size=1.25) +
-  geom_line(data=mp4c, aes(Date, swe_c, color="c"), size=1.25) +
-  geom_line(data=mp4d, aes(Date, swe_d, color="d"), size=1.25) +
-  geom_line(data=mp4e1, aes(Date, swe_e1, color="e1"), size=1.25) +
-  geom_line(data=mp4e2, aes(Date, swe_e2, color="e2"), size=1.25) +
+  geom_line(data=mp4a, aes(Date, swe_a, color="A"), size=1.25) +
+  geom_line(data=mp4b1, aes(Date, swe_b1, color="B1"), size=1.25) +
+  geom_line(data=mp4b2, aes(Date, swe_b2, color="B2"), size=1.25) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="C"), size=1.25) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="D"), size=1.25) +
+  geom_line(data=mp4e1, aes(Date, swe_e1, color="E1"), size=1.25) +
+  geom_line(data=mp4e2, aes(Date, swe_e2, color="E2"), size=1.25) +
   geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=4) +
   scale_shape_manual(values=17) +
   scale_color_manual(values=safe_pal) +
@@ -385,7 +385,23 @@ ggplot() +
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 
-#difference when comparing models to a
+allmelt <- ggplot() + 
+  geom_line(data=mp4a, aes(Date, swe_a, color="A"), size=1.25) +
+  geom_line(data=mp4b1, aes(Date, swe_b1, color="B1"), size=1.25) +
+  geom_line(data=mp4b2, aes(Date, swe_b2, color="B2"), size=1.25) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="C"), size=1.25) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="D"), size=1.25) +
+  geom_line(data=mp4e1, aes(Date, swe_e1, color="E1"), size=1.25) +
+  geom_line(data=mp4e2, aes(Date, swe_e2, color="E2"), size=1.25) +
+  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=4) +
+  scale_shape_manual(values=17) +
+  scale_color_manual(values=safe_pal) +
+  #scale_color_viridis(discrete=T, option="D") +
+  labs(y="SWE (mm)", shape="", color="models", x="")
+
+ggplotly(allmelt)
+
+## \]81d0ifference when comparing models to a
 ggplot(allmod, aes(x=Date)) +
   geom_line(aes(y=swe_a-swe_b1, color="b1 diff")) +
   geom_line(aes(y=swe_a-swe_b2, color="b2_diff")) +
