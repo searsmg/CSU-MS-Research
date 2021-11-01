@@ -322,6 +322,22 @@ ggplot(uz_new, aes(x=bin, y=slope_Ckm)) +
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
+#get some wind stats
+#get some wind stats
+uz_stats_yr <- uz_new %>%
+  group_by(bin) %>%
+  summarize(count = n(),
+            meanDTEG = mean(slope_Ckm),
+            sdDTEG = sd(slope_Ckm))
+
+uz_stats_sign <- uz_new %>%
+  group_by(bin, sign) %>%
+  summarize(count = n(),
+            meanDTEG = mean(slope_Ckm),
+            sdDTEG = sd(slope_Ckm))
+
+
+
 ###############################################################################
 ###############################################################################
 #need to look at dewpoint temp by transect
