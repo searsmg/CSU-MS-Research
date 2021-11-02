@@ -270,9 +270,9 @@ allmod <- cbind(mp4a, mp4b1, mp4b2, mp4c, mp4d)
 allmod <- allmod[-c(6,11,16,21)]
 
 ggplot(allmod, aes(x=Datetime)) +
-  geom_line(aes(y=tcum_a, color="a,c,e1 [obs]"), size=1) +
-  geom_line(aes(y=tcum_b1, color = "b1 [elr]"), size=1) +
-  geom_line(aes(y=tcum_b2, color ="b2,d,e2 [L&E]"), size=1) +
+  geom_line(aes(y=tcum_a, color="A,C,E1"), size=1) +
+  geom_line(aes(y=tcum_b1, color = "B1"), size=1) +
+  geom_line(aes(y=tcum_b2, color ="B2,D,E2"), size=1) +
   labs(x="", y="Cumulative air temperure (C)", color="model") +
   scale_color_brewer(palette="Dark2")
 
@@ -305,6 +305,7 @@ ggplot(allmod, aes(x=Datetime)) +
 ggplot(allmod, aes(x=tcum_a, y=tcum_b1)) + 
   geom_line() +
   geom_abline(intercept = 0, slope = 1, size=1, color="red") #1:1
+  + annotate("rect", xmin=c(7500), xmax=c(9000), ymin=c(5000) , ymax=c(7500), alpha=0.2, color="blue", fill="blue")
   
 ggplot(allmod, aes(x=tcum_a, y=tcum_b2)) + 
   geom_line() +
