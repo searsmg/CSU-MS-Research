@@ -10,6 +10,7 @@ library(esquisse)
 library(RColorBrewer)
 library(viridis)
 library(rcartocolor)
+library(gridExtra)
 
 rm(list = ls()) 
 
@@ -433,3 +434,19 @@ dswe <- ggplot(allmod, aes(x=swe_a, y=swe_d)) +
 
 grid.arrange(b1swe, b2swe, cswe, dswe, nrow=2)
 
+ggplot() + 
+  geom_line(data=mp4a, aes(Date, swe_a, color="A"), size=1.25) +
+  geom_line(data=mp4b1, aes(Date, swe_b1, color="B1"), size=1.25) +
+  geom_line(data=mp4b2, aes(Date, swe_b2, color="B2"), size=1.25) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="C"), size=1.25) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="D"), size=1.25) +
+  geom_line(data=mp4e1, aes(Date, swe_e1, color="E1"), size=1.25) +
+  geom_line(data=mp4e2, aes(Date, swe_e2, color="E2"), size=1.25) +
+  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=4) +
+  scale_shape_manual(values=17) +
+  scale_color_manual(values=safe_pal) +
+  #scale_color_viridis(discrete=T, option="D") +
+  labs(y="SWE (mm)", shape="", color="models", x="") +
+  PlotFormat + 
+  #theme(legend.position = c(0.95, 0.8)) +
+  scale_y_continuous(trans="log10")
