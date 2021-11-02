@@ -354,7 +354,7 @@ mp4e2 <- mp4e2 %>%
 
 allmod <- cbind(mp4a, mp4b1, mp4b2, mp4c, mp4d, mp4e1, mp4e2)
 allmod <- allmod[-c(3,5,7,9,11,13)]
-
+write.csv(allmod, "allmod.csv")
 ###############################################################################
 #PLOTTING
 
@@ -367,21 +367,25 @@ safe_pal <- carto_pal(12, "Safe")
 PLOT="allmelt"
 custombreaks <- seq(0, 700, 50)
 ggplot() + 
-  geom_line(data=mp4a, aes(Date, swe_a, color="A"), size=1.25) +
-  geom_line(data=mp4b1, aes(Date, swe_b1, color="B1"), size=1.25) +
-  geom_line(data=mp4b2, aes(Date, swe_b2, color="B2"), size=1.25) +
-  geom_line(data=mp4c, aes(Date, swe_c, color="C"), size=1.25) +
-  geom_line(data=mp4d, aes(Date, swe_d, color="D"), size=1.25) +
-  geom_line(data=mp4e1, aes(Date, swe_e1, color="E1"), size=1.25) +
-  geom_line(data=mp4e2, aes(Date, swe_e2, color="E2"), size=1.25) +
-  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=4) +
+  geom_line(data=mp4a, aes(Date, swe_a, color="A", linetype="A"), size=1) +
+  geom_line(data=mp4b1, aes(Date, swe_b1, color="B1", linetype="B1"), size=1) +
+  geom_line(data=mp4b2, aes(Date, swe_b2, color="B2", linetype="B2"), size=1) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="C", linetype="C"), size=1) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="D", linetype="D"), size=1) +
+  geom_line(data=mp4e1, aes(Date, swe_e1, color="E1", linetype="E1"), size=1) +
+  geom_line(data=mp4e2, aes(Date, swe_e2, color="E2",  linetype="E2"), size=1) +
+  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
   scale_shape_manual(values=17) +
-  scale_color_manual(values=safe_pal) +
-  #scale_color_viridis(discrete=T, option="D") +
-  labs(y="SWE (mm)", shape="", color="models", x="") +
+  scale_color_manual(name="models", values=c("A"="#009E73",
+                              "B1"="#0072B2", "B2"="#D55E00", "C"="#CC79A7","D"="#999999", "E1" = "#E69F00", "E2" = "#56B4E9")) +
+  scale_linetype_manual(values = c("A"="solid",
+                                   "B1"="dotdash", "B2"="dotdash", "C"="solid","D"="solid", "E1" = "dashed", "E2" = "dashed")) +
+  labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
   PlotFormat + 
   #theme(legend.position = c(0.95, 0.8)) +
-  scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE))
+  scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
+  guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
+         color=guide_legend(keywidth = 3, keyheight = 1))
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -392,8 +396,8 @@ allmelt <- ggplot() +
   geom_line(data=mp4b2, aes(Date, swe_b2, color="B2"), size=1.25) +
   geom_line(data=mp4c, aes(Date, swe_c, color="C"), size=1.25) +
   geom_line(data=mp4d, aes(Date, swe_d, color="D"), size=1.25) +
-  geom_line(data=mp4e1, aes(Date, swe_e1, color="E1"), size=1.25) +
-  geom_line(data=mp4e2, aes(Date, swe_e2, color="E2"), size=1.25) +
+  geom_line(data=mp4e1, aes(Date, swe_e1, color="E1"), linetype="dashed", size=1.25) +
+  geom_line(data=mp4e2, aes(Date, swe_e2, color="E2"), linetype="dashed", size=1.25) +
   geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=4) +
   scale_shape_manual(values=17) +
   scale_color_manual(values=safe_pal) +
@@ -403,14 +407,29 @@ allmelt <- ggplot() +
 ggplotly(allmelt)
 
 ## \]81d0ifference when comparing models to a
+PLOT="melt diff"
+custombreaks <- seq(-500, 0, 25)
 ggplot(allmod, aes(x=Date)) +
-  geom_line(aes(y=swe_a-swe_b1, color="b1 diff")) +
-  geom_line(aes(y=swe_a-swe_b2, color="b2_diff")) +
-  geom_line(aes(y=swe_a-swe_c, color="c_diff")) +
-  geom_line(aes(y=swe_a-swe_d, color="d_diff")) +
-  labs(x="", y="SWE difference (mm)", color="model") +
-  scale_color_brewer(palette="Dark2")
+  geom_line(aes(y=swe_a-swe_b1, color="B1", linetype="B1"), size=1.25) +
+  geom_line(aes(y=swe_a-swe_b2, color="B2",linetype="B2"), size=1.25) +
+  geom_line(aes(y=swe_a-swe_c, color="C", linetype="C"), size=1.25) +
+  geom_line(aes(y=swe_a-swe_d, color="D", linetype="D"), size=1.25) +
+  geom_line(aes(y=swe_a-swe_e1, color="E1", linetype="E1"), size=1.25) +
+  geom_line(aes(y=swe_a-swe_e2, color="E2", linetype="E2"), size=1.25) +
+  PlotFormat +
+  labs(x="", y="SWE difference (mm)", color="Difference from\nModel A", linetype="Difference from\nModel A") +
+  scale_color_manual(name="Difference from\nModel A", values=c("B1"="#0072B2", "B2"="#D55E00", 
+                                             "C"="#CC79A7","D"="#999999", "E1" = "#E69F00", "E2" = "#56B4E9")) +
+  scale_linetype_manual(values = c("B1"="dotdash", "B2"="dotdash", 
+                                   "C"="solid","D"="solid", "E1" = "dashed", "E2" = "dashed")) +
+  scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
+  guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
+         color=guide_legend(keywidth = 3, keyheight = 1))
 
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+  
+  
 #compare nrcum to each scenario (4)
 b1swe <- ggplot(allmod, aes(x=swe_a, y=swe_b1)) + 
   geom_line() +
