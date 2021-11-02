@@ -132,11 +132,34 @@ JW21_melt_test <- JW21_melt %>%
   mutate(melt_mod_cum = cumsum(melt_mod),
          melt_obs_cum = cumsum(melt_obs))
 
+PlotFormat = theme(axis.text=element_text(size=20, color="black"),
+                   axis.title.x=element_text(size=22, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+                   axis.title.y=element_text(size=22, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+                   plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
+                   legend.title=element_text(size=18, color="black"),                                                                    
+                   legend.text=element_text(size=18, color="black"),                                                                   
+                   legend.position = "right", 
+                   #panel.grid.major = element_blank(), 
+                   #panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   #axis.line = element_line(colour = "black"),
+                   strip.text = element_text(size=28),
+                   panel.border = element_rect(colour = "black", fill=NA, size=1),
+                   legend.key=element_blank())
+
+
+
+
 compare <- ggplot(JW21_melt_test)+geom_line(aes(x=Date, y=melt_mod_cum))+geom_point(aes(x=Date, y=melt_obs_cum))
 
 ggplotly(compare)
 
-ggplot(JW21_melt_test)+geom_point(aes(x=melt_obs_cum, y=melt_mod_cum))+
-  geom_abline(intercept = 0, slope = 1, size=1.5, color="red")
+PLOT="MFs"
+ggplot(JW21_melt_test)+geom_point(aes(x=melt_obs_cum, y=melt_mod_cum), size=2)+
+  geom_abline(intercept = 0, slope = 1, size=1.5, color="blue") +
+  PlotFormat +
+  labs(x="Observed snowmelt (mm)", y="Modeled snowmelt (mm)") 
+  
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 NSE(JW21_melt_test$melt_mod_cum, JW21_melt_test$melt_obs_cum)
