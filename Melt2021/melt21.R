@@ -493,6 +493,12 @@ write.csv(all_melt, "all_melt.csv")
 all_melt <- read.csv("all_melt.csv") %>%
   mutate(Date = ymd(Date))
 
+
+all_melt <- all_melt %>%
+  group_by(model) %>%
+  mutate(melt_cum = cumsum(melt))
+
+
 mod_names <- c(`melt_b1` = "B1",
                `melt_b2` = "B2",
                `melt_c` = "C",
@@ -500,9 +506,9 @@ mod_names <- c(`melt_b1` = "B1",
                `melt_e1` = "E1",
                `melt_e2` = "E2")
 
-PLOT ="melt_1to1"
+PLOT ="melt_1to1_cum"
 ggplot(all_melt) +
-  geom_point(aes(x=melt_a, y=melt, color=model), size=2) +
+  geom_point(aes(x=melt_a_cum, y=melt_cum, color=model), size=2.5) +
   facet_wrap(~model, labeller = as_labeller(mod_names)) +
   theme_bw() + PlotFormat +
   scale_color_manual(values=c("melt_b1"="#0072B2", "melt_b2"="#D55E00", 
@@ -511,7 +517,7 @@ ggplot(all_melt) +
                                    "melt_e2" = "#56B4E9")) +
   geom_abline(intercept = 0, slope = 1, size=1) +
   theme(legend.position = "none") +
-  labs(x="Model A melt (mm/day)", y="Melt (mm/day)") 
+  labs(x="Scenario A cumulative melt (mm)", y="Cumulative melt (mm)") 
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -530,9 +536,29 @@ rmse(allmod$melt_a, allmod$melt_d)
 rmse(allmod$melt_a, allmod$melt_e1)
 rmse(allmod$melt_a, allmod$melt_e2)
 
-mae(allmod$melt_a, allmod$melt_b1)
-mae(allmod$melt_a, allmod$melt_b2)
-mae(allmod$melt_a, allmod$melt_c)
-mae(allmod$melt_a, allmod$melt_d)
-mae(allmod$melt_a, allmod$melt_e1)
-mae(allmod$melt_a, allmod$melt_e2)
+#get values for cum melt 
+meltcum_wide <- all_melt %>%
+  pivot_wider(names_from=model,
+              values_from=melt_cum) %>%
+  select(-c(X, melt, melt_a)) %>%
+  group_by(Date)
+
+write.csv(meltcum_wide, "meltcum_wide.csv")
+
+meltcum_wide <- read.csv("meltcum_wide.csv") %>%
+  mutate(Date = ymd(Date)) %>%
+  rename(melt_a = melt_a_cum)
+
+NSE(meltcum_wide$melt_a, meltcum_wide$melt_b1)
+NSE(meltcum_wide$melt_a, meltcum_wide$melt_b2)
+NSE(meltcum_wide$melt_a, meltcum_wide$melt_c)
+NSE(meltcum_wide$melt_a, meltcum_wide$melt_d)
+NSE(meltcum_wide$melt_a, meltcum_wide$melt_e1)
+NSE(meltcum_wide$melt_a, meltcum_wide$melt_e2)
+
+rmse(meltcum_wide$melt_a, meltcum_wide$melt_b1)
+rmse(meltcum_wide$melt_a, meltcum_wide$melt_b2)
+rmse(meltcum_wide$melt_a, meltcum_wide$melt_c)
+rmse(meltcum_wide$melt_a, meltcum_wide$melt_d)
+rmse(meltcum_wide$melt_a, meltcum_wide$melt_e1)
+rmse(meltcum_wide$melt_a, meltcum_wide$melt_e2)
