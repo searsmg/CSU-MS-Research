@@ -74,6 +74,31 @@ T21_slope <- T21_slope %>%
   filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
 
 slope <- rbind(T20_slope, T21_slope)
+###############################################################
+slope_day <- slope %>%
+  mutate(date = as.Date(format(Datetime, "%Y/%m/%d"))) %>%
+  group_by(date, year) %>%
+  summarize(avgslope = mean(Slope_degCkm),
+            avgR2 = mean(R2))
+
+PLOT = "TEG daily_20&21"
+ggplot(slope_day, aes(x=date, y=avgslope)) +
+  geom_point(aes(colour=avgR2), size=2) + 
+  ylim(-10,10) +
+  scale_x_date(date_labels = "%b", breaks="1 month") +
+  labs(x= "", y=expression("TEG " (degree*C/km)), color=expression(paste("R"^2))) +
+  #scale_x_date(date_labels = "%b", date_break = "1 month") +
+  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1.25) +
+  facet_wrap(~year, scales="free_x") + 
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) +
+  PlotFormat +
+  theme(panel.spacing = unit(0.5, "cm")) +
+  guides(linetype = guide_legend(order=1))
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+
 ############################################################################
 #plotting TEG 2020 and 2021 with R2
 PLOT = "TEG_20&21"
@@ -99,6 +124,27 @@ slope_edit <- slope %>%
   filter(Slope_degCkm > -32) 
 
 slope_edit$date <- as.Date(format(slope_edit$Datetime, format = "%Y-%m-%d"))
+
+slope_hour <- slope_edit %>%
+  group_by(hour) %>%
+  summarize(avgslope = mean(Slope_degCkm),
+            avgR2 = mean(R2))
+
+PLOT = "TEG hr"
+ggplot(slope_hour, aes(x=hour, y=avgslope)) +
+  geom_point(aes(colour=avgR2), size=2) + 
+  ylim(-10,10) +
+  #scale_x_date(date_labels = "%b", breaks="1 month") +
+  labs(x= "", y=expression("TEG " (degree*C/km)), color=expression(paste("R"^2))) +
+  #scale_x_date(date_labels = "%b", date_break = "1 month") +
+  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1.25) +
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) +
+  PlotFormat +
+  guides(linetype = guide_legend(order=1))
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
 
 PLOT="heatmap_slope"
 slopefig <- ggplot(slope_edit, aes(x=date, y=hour, fill=Slope_degCkm)) +
