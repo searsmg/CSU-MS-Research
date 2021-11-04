@@ -514,3 +514,25 @@ ggplot(all_melt) +
   labs(x="Model A melt (mm/day)", y="Melt (mm/day)") 
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+#get NSE values
+NSE(allmod$melt_a, allmod$melt_b1)
+NSE(allmod$melt_a, allmod$melt_b2)
+NSE(allmod$melt_a, allmod$melt_c)
+NSE(allmod$melt_a, allmod$melt_d)
+NSE(allmod$melt_a, allmod$melt_e1)
+NSE(allmod$melt_a, allmod$melt_e2)
+
+rmse(allmod$melt_a, allmod$melt_b1)
+rmse(allmod$melt_a, allmod$melt_b2)
+rmse(allmod$melt_a, allmod$melt_c)
+rmse(allmod$melt_a, allmod$melt_d)
+rmse(allmod$melt_a, allmod$melt_e1)
+rmse(allmod$melt_a, allmod$melt_e2)
+
+mae(allmod$melt_a, allmod$melt_b1)
+mae(allmod$melt_a, allmod$melt_b2)
+mae(allmod$melt_a, allmod$melt_c)
+mae(allmod$melt_a, allmod$melt_d)
+mae(allmod$melt_a, allmod$melt_e1)
+mae(allmod$melt_a, allmod$melt_e2)
