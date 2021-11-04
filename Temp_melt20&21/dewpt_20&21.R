@@ -155,6 +155,33 @@ slope <- slope %>%
   filter(slope_Ckm > -30,
          slope_Ckm < 30)
 
+slope_day <- slope %>%
+  mutate(date = as.Date(format(Datetime, "%Y/%m/%d"))) %>%
+  group_by(date, year) %>%
+  summarize(avgslope = mean(slope_Ckm),
+            avgR2 = mean(r2),
+            medslope = median(slope_Ckm))
+
+
+PLOT = "DTEG daily_20&21"
+ggplot(slope_day, aes(x=date, y=medslope)) +
+  geom_point(aes(colour=avgR2), size=3) + 
+  ylim(-10,10) +
+  scale_x_date(date_labels = "%b", breaks="1 month") +
+  labs(x= "", y=expression("Daily median DTEG " (degree*C/km)), color=expression(paste("R"^2))) +
+  #scale_x_date(date_labels = "%b", date_break = "1 month") +
+  geom_hline(aes(yintercept=-5.1, linetype="Kunkel (1989)"), color="Red", size=1.25) +
+  facet_wrap(~year, scales="free_x") + 
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) +
+  PlotFormat +
+  theme(panel.spacing = unit(0.5, "cm")) +
+  guides(linetype = guide_legend(order=1))
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+
+
 PLOT = "Dewpt gradient_20&21 by r2"
 ggplot(slope, aes(x=Datetime, y=slope_Ckm)) +
   geom_point(aes(colour=r2), size=2) + 
