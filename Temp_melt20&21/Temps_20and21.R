@@ -79,14 +79,15 @@ slope_day <- slope %>%
   mutate(date = as.Date(format(Datetime, "%Y/%m/%d"))) %>%
   group_by(date, year) %>%
   summarize(avgslope = mean(Slope_degCkm),
-            avgR2 = mean(R2))
+            avgR2 = mean(R2),
+            medslope = median(Slope_degCkm))
 
 PLOT = "TEG daily_20&21"
-ggplot(slope_day, aes(x=date, y=avgslope)) +
-  geom_point(aes(colour=avgR2), size=2) + 
+ggplot(slope_day, aes(x=date, y=medslope)) +
+  geom_point(aes(colour=avgR2), size=3) + 
   ylim(-10,10) +
   scale_x_date(date_labels = "%b", breaks="1 month") +
-  labs(x= "", y=expression("TEG " (degree*C/km)), color=expression(paste("R"^2))) +
+  labs(x= "", y=expression("Daily median TEG " (degree*C/km)), color=expression(paste("R"^2))) +
   #scale_x_date(date_labels = "%b", date_break = "1 month") +
   geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1.25) +
   facet_wrap(~year, scales="free_x") + 
@@ -132,10 +133,10 @@ slope_hour <- slope_edit %>%
 
 PLOT = "TEG hr"
 ggplot(slope_hour, aes(x=hour, y=avgslope)) +
-  geom_point(aes(colour=avgR2), size=2) + 
+  geom_point(aes(colour=avgR2), size=3) + 
   ylim(-10,10) +
   #scale_x_date(date_labels = "%b", breaks="1 month") +
-  labs(x= "", y=expression("TEG " (degree*C/km)), color=expression(paste("R"^2))) +
+  labs(x= "", y=expression("Average TEG " (degree*C/km)), color=expression(paste("R"^2))) +
   #scale_x_date(date_labels = "%b", date_break = "1 month") +
   geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1.25) +
   scale_color_gradient(low='grey', high='black')+
