@@ -11,6 +11,8 @@ library(RColorBrewer)
 library(viridis)
 library(rcartocolor)
 library(gridExtra)
+library(stringr)
+library(hydroGOF)
 
 rm(list = ls()) 
 
@@ -319,41 +321,48 @@ ggplot() + geom_line(data=mp4e2, aes(Date, swe_cum)) +
 
 mp4a <- mp4a %>%
   mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
-  rename(swe_a = swe_cum) %>%
-  select(c(Date, swe_a))
+  rename(swe_a = swe_cum,
+         melt_a = melt) %>%
+  select(c(Date, swe_a, melt_a))
 
 mp4b1 <- mp4b1 %>%
   mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
-  rename(swe_b1 = swe_cum)%>%
-  select(c(Date, swe_b1))
+  rename(swe_b1 = swe_cum,
+         melt_b1 = melt)%>%
+  select(c(Date, swe_b1, melt_b1))
 
 mp4b2 <- mp4b2 %>%
   mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
-  rename(swe_b2 = swe_cum)%>%
-  select(c(Date, swe_b2))
+  rename(swe_b2 = swe_cum,
+         melt_b2 = melt)%>%
+  select(c(Date, swe_b2, melt_b2))
 
 mp4c <- mp4c %>%
   mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
-  rename(swe_c = swe_cum)%>%
-  select(c(Date, swe_c))
+  rename(swe_c = swe_cum,
+         melt_c = melt)%>%
+  select(c(Date, swe_c, melt_c))
 
 mp4d <- mp4d %>%
   mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
-  rename(swe_d = swe_cum)%>%
-  select(c(Date, swe_d))
+  rename(swe_d = swe_cum,
+         melt_d = melt)%>%
+  select(c(Date, swe_d, melt_d))
 
 mp4e1 <- mp4e1 %>%
   mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
-  rename(swe_e1 = swe_cum)%>%
-  select(c(Date, swe_e1))
+  rename(swe_e1 = swe_cum,
+         melt_e1 = melt)%>%
+  select(c(Date, swe_e1, melt_e1))
 
 mp4e2 <- mp4e2 %>%
   mutate(swe_cum = ifelse(swe_cum <0,0,swe_cum)) %>%
-  rename(swe_e2 = swe_cum)%>%
-  select(c(Date, swe_e2))
+  rename(swe_e2 = swe_cum,
+         melt_e2 = melt)%>%
+  select(c(Date, swe_e2, melt_e2))
 
 allmod <- cbind(mp4a, mp4b1, mp4b2, mp4c, mp4d, mp4e1, mp4e2)
-allmod <- allmod[-c(3,5,7,9,11,13)]
+allmod <- allmod[-c(4,7,10,13,16,19)]
 write.csv(allmod, "allmod.csv")
 ###############################################################################
 #PLOTTING
@@ -469,3 +478,39 @@ ggplot() +
   PlotFormat + 
   #theme(legend.position = c(0.95, 0.8)) +
   scale_y_continuous(trans="log10")
+
+
+all_long <- allmod %>%
+  pivot_longer(!Date, names_to = "model", values_to = "melt")
+
+all_long$type = substr(all_long$model,1,2)
+
+all_melt <- all_long %>%
+  filter(str_detect(type, "me"))
+
+write.csv(all_melt, "all_melt.csv")
+
+all_melt <- read.csv("all_melt.csv") %>%
+  mutate(Date = ymd(Date))
+
+mod_names <- c(`melt_b1` = "B1",
+               `melt_b2` = "B2",
+               `melt_c` = "C",
+               `melt_d` = "D",
+               `melt_e1` = "E1",
+               `melt_e2` = "E2")
+
+PLOT ="melt_1to1"
+ggplot(all_melt) +
+  geom_point(aes(x=melt_a, y=melt, color=model), size=2) +
+  facet_wrap(~model, labeller = as_labeller(mod_names)) +
+  theme_bw() + PlotFormat +
+  scale_color_manual(values=c("melt_b1"="#0072B2", "melt_b2"="#D55E00", 
+                                   "melt_c"="#CC79A7",
+                                   "melt_d"="#999999", "melt_e1" = "#E69F00", 
+                                   "melt_e2" = "#56B4E9")) +
+  geom_abline(intercept = 0, slope = 1, size=1) +
+  theme(legend.position = "none") +
+  labs(x="Model A melt (mm/day)", y="Melt (mm/day)") 
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
