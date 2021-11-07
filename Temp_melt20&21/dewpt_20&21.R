@@ -62,6 +62,21 @@ all20 <- merge(T20, RH_dewpt, by=c("Datetime", "ID"))
 minute(all20$Datetime) <- 0
 minute(all21$Datetime) <- 0
 
+
+all_mayjun21 <- all21 %>%
+  filter(Datetime > ymd_hms("2021-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
+
+td <- ggplot(all_mayjun21) +
+  geom_line(aes(x=Datetime, y=dewpoint, color=ID))
+
+ggplotly(td)
+all21 <- all21 %>%
+  filter(!str_detect(ID, "MP9")) %>%
+  filter(!str_detect(ID, "MP8")) %>%
+  filter(!str_detect(ID, "HD9")) %>%
+  filter(!str_detect(ID, "HD8"))
+
 ############################################################################
 #data are set up - run models now for 2020 (get slope, r2, and p-value)
 
@@ -160,10 +175,13 @@ slope_day <- slope %>%
   group_by(date, year) %>%
   summarize(avgslope = mean(slope_Ckm),
             avgR2 = mean(r2),
-            medslope = median(slope_Ckm))
+            medslope = median(slope_Ckm),
+            meanp = mean(pval)) %>%
+  filter(avgR2 >0.2)
 
 
-PLOT = "DTEG daily_20&21"
+
+PLOT = "DTEG daily_20&21_byr2"
 ggplot(slope_day, aes(x=date, y=medslope)) +
   geom_point(aes(colour=avgR2), size=3) + 
   ylim(-10,10) +
@@ -180,8 +198,22 @@ ggplot(slope_day, aes(x=date, y=medslope)) +
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
+PLOT = "DTEG daily_20&21_byp"
+ggplot(slope_day, aes(x=date, y=medslope)) +
+  geom_point(aes(colour=cut(meanp, c(-Inf, 0.05, Inf))), size=2) + 
+  scale_x_date(date_labels = "%b", breaks="1 month") +
+  facet_wrap(~year, scales="free_x") + PlotFormat +
+  scale_color_manual(name = "pval",
+                     values = c("black","gray"),
+                     labels = c("S", "NS")) +
+  labs(x="", y=expression("Daily DTEG " (degree*C/km))) +
+  guides(colour=guide_legend(title="p-value"))
 
 
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+
+#####################################################################
 PLOT = "Dewpt gradient_20&21 by r2"
 ggplot(slope, aes(x=Datetime, y=slope_Ckm)) +
   geom_point(aes(colour=r2), size=2) + 
