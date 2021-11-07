@@ -80,10 +80,39 @@ slope_day <- slope %>%
   group_by(date, year) %>%
   summarize(avgslope = mean(Slope_degCkm),
             avgR2 = mean(R2),
-            medslope = median(Slope_degCkm))
+            medslope = median(Slope_degCkm)) %>%
+  mutate(avgr2_fix = format(round(avgR2, 2), nsmall=2))
 
 PLOT = "TEG daily_20&21"
 ggplot(slope_day, aes(x=date, y=medslope)) +
+  geom_point(aes(colour=avgR2), size=3) + 
+  ylim(-10,10) +
+  scale_x_date(date_labels = "%b", breaks="1 month") +
+  labs(x= "", y=expression("Daily median TEG " (degree*C/km)), color=expression(paste("R"^2))) +
+  #scale_x_date(date_labels = "%b", date_break = "1 month") +
+  geom_hline(aes(yintercept=-6.5, linetype="ELR"), color="Red", size=1.25) +
+  facet_wrap(~year, scales="free_x") + 
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) +
+  PlotFormat +
+  theme(panel.spacing = unit(0.5, "cm")) +
+  guides(linetype = guide_legend(order=1)) +
+  geom_text(aes(label=avgr2_fix),hjust=0, vjust=0)
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+#more stats
+slope_day_stats <- slope_day %>%
+  group_by(year) %>%
+  summarize(avgslope = mean(avgslope),
+            avgR2 = mean(avgR2),
+            medslope = median(medslope))
+
+slope_day_edit <- slope_day %>%
+  filter(avgR2 > 0.2)
+
+PLOT = "TEG daily_20&21_r2"
+ggplot(slope_day_edit, aes(x=date, y=medslope)) +
   geom_point(aes(colour=avgR2), size=3) + 
   ylim(-10,10) +
   scale_x_date(date_labels = "%b", breaks="1 month") +
@@ -99,6 +128,12 @@ ggplot(slope_day, aes(x=date, y=medslope)) +
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
+
+slope_day_byr2 <- slope_day_edit %>%
+  group_by(year) %>%
+  summarize(avgslope = mean(avgslope),
+            avgR2 = mean(avgR2),
+            medslope = median(medslope))
 
 ############################################################################
 #plotting TEG 2020 and 2021 with R2
@@ -129,7 +164,14 @@ slope_edit$date <- as.Date(format(slope_edit$Datetime, format = "%Y-%m-%d"))
 slope_hour <- slope_edit %>%
   group_by(hour) %>%
   summarize(avgslope = mean(Slope_degCkm),
-            avgR2 = mean(R2))
+            avgR2 = mean(R2)) %>%
+  mutate(sign = ifelse(avgslope < 0, "negative", "positive"))
+
+
+slope_hr_stats <- slope_hour %>%
+  group_by(sign) %>%
+  summarize(avgslope_sign = mean(avgslope),
+            avgr2sign = mean(avgR2))
 
 PLOT = "TEG hr"
 ggplot(slope_hour, aes(x=hour, y=avgslope)) +
