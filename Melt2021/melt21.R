@@ -13,6 +13,7 @@ library(rcartocolor)
 library(gridExtra)
 library(stringr)
 library(hydroGOF)
+library(cowplot)
 
 rm(list = ls()) 
 
@@ -375,7 +376,7 @@ safe_pal <- carto_pal(12, "Safe")
 #all models together
 PLOT="allmelt"
 custombreaks <- seq(0, 700, 50)
-ggplot() + 
+main <- ggplot() + 
   geom_line(data=mp4a, aes(Date, swe_a, color="A", linetype="A"), size=1) +
   geom_line(data=mp4b1, aes(Date, swe_b1, color="B1", linetype="B1"), size=1) +
   geom_line(data=mp4b2, aes(Date, swe_b2, color="B2", linetype="B2"), size=1) +
@@ -394,11 +395,46 @@ ggplot() +
   #theme(legend.position = c(0.95, 0.8)) +
   scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
   guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
-         color=guide_legend(keywidth = 3, keyheight = 1))
+         color=guide_legend(keywidth = 3, keyheight = 1)) +
+  annotation_custom(ggplotGrob(mini), xmin = as.Date("2021-05-1"), xmax = as.Date("2021-06-1"), 
+                    ymin = 0, ymax = 300)
+main
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+#######
 
+mini <- ggplot() + 
+  geom_line(data=mp4a, aes(Date, swe_a, color="A", linetype="A"), size=1) +
+  geom_line(data=mp4b1, aes(Date, swe_b1, color="B1", linetype="B1"), size=1) +
+  geom_line(data=mp4b2, aes(Date, swe_b2, color="B2", linetype="B2"), size=1) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="C", linetype="C"), size=1) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="D", linetype="D"), size=1) +
+  geom_line(data=mp4e1, aes(Date, swe_e1, color="E1", linetype="E1"), size=1) +
+  geom_line(data=mp4e2, aes(Date, swe_e2, color="E2",  linetype="E2"), size=1) +
+  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
+  scale_x_date(limits = as.Date(c('2021-06-10','2021-06-25')), date_breaks = "3 days", 
+               date_labels = "%b-%d")+
+  scale_shape_manual(values=17) +
+  scale_color_manual(name="models", values=c("A"="#009E73",
+                                             "B1"="#0072B2", "B2"="#D55E00", "C"="#CC79A7","D"="#999999", "E1" = "#E69F00", "E2" = "#56B4E9")) +
+  scale_linetype_manual(values = c("A"="solid",
+                                   "B1"="dotdash", "B2"="dotdash", "C"="solid","D"="solid", "E1" = "dashed", "E2" = "dashed")) +
+  labs(y="", shape="", color="models", linetype="models", x="") +
+  #theme(legend.position = c(0.95, 0.8)) +
+  guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
+         color=guide_legend(keywidth = 3, keyheight = 1)) +
+  scale_y_continuous(breaks = seq(0,450,100),
+                     limits = c(0,450)) +
+  PlotFormat + theme(legend.position = "none") +
+  theme(axis.text=element_text(size=12, color="black"),
+        axis.title.x=element_text(size=12, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+        axis.title.y=element_text(size=12, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+        plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),
+        plot.margin = margin(-1, -1, -1, -1, "cm"))
 
+mini
+
+####
 allmelt <- ggplot() + 
   geom_line(data=mp4a, aes(Date, swe_a, color="A"), size=1.25) +
   geom_line(data=mp4b1, aes(Date, swe_b1, color="B1"), size=1.25) +
