@@ -32,6 +32,8 @@ PlotFormat = theme(axis.text=element_text(size=20, color="black"),
                    legend.title=element_text(size=18, color="black"),                                                                    
                    legend.text=element_text(size=18, color="black"),                                                                   
                    legend.position = "right", 
+                   #panel.grid.major = element_line(colour = "grey80"),
+                   #panel.grid.minor = element_line(colour = "grey80"),
                    #panel.grid.major = element_blank(), 
                    #panel.grid.minor = element_blank(),
                    panel.background = element_blank(), 
@@ -85,6 +87,7 @@ slope_day <- slope %>%
 
 PLOT = "TEG daily_20&21"
 ggplot(slope_day, aes(x=date, y=medslope)) +
+  geom_hline(aes(yintercept=0), color="black") +
   geom_point(aes(colour=avgR2), size=3) + 
   ylim(-10,10) +
   scale_x_date(date_labels = "%b", breaks="1 month") +
@@ -96,8 +99,8 @@ ggplot(slope_day, aes(x=date, y=medslope)) +
   scale_linetype_manual(name ="", values = c('solid')) +
   PlotFormat +
   theme(panel.spacing = unit(0.5, "cm")) +
-  guides(linetype = guide_legend(order=1)) +
-  geom_text(aes(label=avgr2_fix),hjust=0, vjust=0)
+  guides(linetype = guide_legend(order=1))
+
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
