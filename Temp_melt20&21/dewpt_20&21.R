@@ -26,6 +26,8 @@ PlotFormat = theme(axis.text=element_text(size=20, color="black"),
                    legend.title=element_text(size=18, color="black"),                                                                    
                    legend.text=element_text(size=18, color="black"),                                                                   
                    legend.position = "right", 
+                   panel.grid.major = element_line(colour = "grey80"),
+                   #panel.grid.minor = element_line(colour = "grey80"),
                    #panel.grid.major = element_blank(), 
                    #panel.grid.minor = element_blank(),
                    panel.background = element_blank(), 
@@ -370,14 +372,18 @@ uz_new <- uz_new %>%
   filter(slope_Ckm > -30,
          slope_Ckm < 30)
 
+uz_new$sign = factor(uz_new$sign, levels=c('positive DTEG','negative DTEG'))
+
 PLOT="uz_boxplot_dew"
-ggplot(uz_new, aes(x=bin, y=slope_Ckm)) +
+ggplot(uz_new, aes(x=bin, y=slope_Ckm, fill=sign)) +
   geom_boxplot()+
-  facet_grid(sign~year) +
-  #PlotFormat +
+  facet_grid(~year) +
+  scale_fill_manual(values=c("red", "light blue")) +
   scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
   PlotFormat+
-  labs(x="Windspeed (m/s)", y=expression("DTEG " (degree*C/km))) 
+  labs(x="Wind speed (m/s)", y=expression("DTEG " (degree*C/km)),
+       fill="") +
+  theme(legend.position = "bottom")
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -512,10 +518,10 @@ slope21_hd <- dew21_hd %>%
   group_nest(Datetime) %>%
   mutate(model = map(data, fit_model)) %>%
   mutate(slope = map_dbl(model, get_slope)) %>%
-  mutate(slope_Ckm = slope*1000) %>%
-  mutate(pear = map(data, pearson)) %>%
-  mutate(pval = map_dbl(pear, pval)) %>%
-  mutate(df = map_dbl(pear, df))
+  mutate(slope_Ckm = slope*1000) #%>%
+  #mutate(pear = map(data, pearson)) %>%
+  #mutate(pval = map_dbl(pear, pval)) %>%
+  #mutate(df = map_dbl(pear, df))
 
 slope21_hd <- slope21_hd %>%
   add_column(r2 = dew21_r_hd$r2) %>%
@@ -547,10 +553,10 @@ slope21_mp <- dew21_mp %>%
   group_nest(Datetime) %>%
   mutate(model = map(data, fit_model)) %>%
   mutate(slope = map_dbl(model, get_slope)) %>%
-  mutate(slope_Ckm = slope*1000) %>%
-  mutate(pear = map(data, pearson)) %>%
-  mutate(pval = map_dbl(pear, pval)) %>%
-  mutate(df = map_dbl(pear, df))
+  mutate(slope_Ckm = slope*1000)# %>%
+  #mutate(pear = map(data, pearson)) %>%
+  #mutate(pval = map_dbl(pear, pval)) %>%
+  #mutate(df = map_dbl(pear, df))
 
 slope21_mp <- slope21_mp %>%
   add_column(r2 = dew21_r_mp$r2) %>%
@@ -569,6 +575,9 @@ slope21_side <- slope21_side %>%
 
 slope20_side <- slope20_side %>%
   mutate(year = 2020)
+
+slope20_side <- slope20_side %>%
+  select(-c(pear, pval,df))
 
 slope_allside <- rbind(slope20_side, slope21_side)
 
