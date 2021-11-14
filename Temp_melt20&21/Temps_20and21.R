@@ -32,7 +32,7 @@ PlotFormat = theme(axis.text=element_text(size=20, color="black"),
                    legend.title=element_text(size=18, color="black"),                                                                    
                    legend.text=element_text(size=18, color="black"),                                                                   
                    legend.position = "right", 
-                   #panel.grid.major = element_line(colour = "grey80"),
+                   panel.grid.major = element_line(colour = "grey80"),
                    #panel.grid.minor = element_line(colour = "grey80"),
                    #panel.grid.major = element_blank(), 
                    #panel.grid.minor = element_blank(),
@@ -97,7 +97,7 @@ ggplot(slope_day, aes(x=date, y=medslope)) +
   facet_wrap(~year, scales="free_x") + 
   scale_color_gradient(low='grey', high='black')+
   scale_linetype_manual(name ="", values = c('solid')) +
-  PlotFormat +
+  theme_bw() + PlotFormat +
   theme(panel.spacing = unit(0.5, "cm")) +
   guides(linetype = guide_legend(order=1))
 
@@ -125,9 +125,11 @@ ggplot(slope_day_edit, aes(x=date, y=medslope)) +
   facet_wrap(~year, scales="free_x") + 
   scale_color_gradient(low='grey', high='black')+
   scale_linetype_manual(name ="", values = c('solid')) +
-  PlotFormat +
+  theme_bw() + PlotFormat +
   theme(panel.spacing = unit(0.5, "cm")) +
-  guides(linetype = guide_legend(order=1))
+  guides(linetype = guide_legend(order=1)) #+
+  #theme(panel.grid.major = element_line(colour = "grey80"))
+        #panel.grid.minor = element_line(colour = "grey80")) +
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -150,7 +152,7 @@ ggplot(slope, aes(x=Datetime, y=Slope_degCkm)) +
   facet_wrap(~year, scales="free_x") + 
   scale_color_gradient(low='grey', high='black')+
   scale_linetype_manual(name ="", values = c('solid')) +
-  theme_bw() + PlotFormat
+  PlotFormat
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -492,14 +494,17 @@ uz_new <- rbind(uz21_new, uz20_new)
 uz_new <- uz_new %>%
   mutate(year = year(Datetime))
 
+uz_new$sign = factor(uz_new$sign, levels=c('positive TEG','negative TEG'))
+
 PLOT="uz_boxplot"
 ggplot(uz_new, aes(x=bin, y=Slope_degCkm)) +
    geom_boxplot()+
-  facet_grid(sign~year) +
+  facet_grid(sign~year, scales="free_y") +
   #PlotFormat +
   scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
   PlotFormat+
-  labs(x="Windspeed (m/s)", y=expression("TEG " (degree*C/km))) 
+  labs(x="Windspeed (m/s)", y=expression("TEG " (degree*C/km)))+
+
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
