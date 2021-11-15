@@ -181,7 +181,10 @@ slope_day <- slope %>%
             meanp = mean(pval)) #%>%
   #mutate(medslope = ifelse(avgR2 >0.2, medslope, NA))
 
-
+mean(slope_day$avgslope)
+mean(slope_day$avgR2)
+median(slope_day$avgslope)
+sd(slope_day$avgslope)
 
 PLOT = "DTEG daily_20&21_byr2all"
 daily_r2all <- ggplot(slope_day, aes(x=date, y=medslope)) +
