@@ -498,24 +498,6 @@ dswe <- ggplot(allmod, aes(x=swe_a, y=swe_d)) +
 
 grid.arrange(b1swe, b2swe, cswe, dswe, nrow=2)
 
-ggplot() + 
-  geom_line(data=mp4a, aes(Date, swe_a, color="A"), size=1.25) +
-  geom_line(data=mp4b1, aes(Date, swe_b1, color="B1"), size=1.25) +
-  geom_line(data=mp4b2, aes(Date, swe_b2, color="B2"), size=1.25) +
-  geom_line(data=mp4c, aes(Date, swe_c, color="C"), size=1.25) +
-  geom_line(data=mp4d, aes(Date, swe_d, color="D"), size=1.25) +
-  geom_line(data=mp4e1, aes(Date, swe_e1, color="E1"), size=1.25) +
-  geom_line(data=mp4e2, aes(Date, swe_e2, color="E2"), size=1.25) +
-  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=4) +
-  scale_shape_manual(values=17) +
-  scale_color_manual(values=safe_pal) +
-  #scale_color_viridis(discrete=T, option="D") +
-  labs(y="SWE (mm)", shape="", color="models", x="") +
-  PlotFormat + 
-  #theme(legend.position = c(0.95, 0.8)) +
-  scale_y_continuous(trans="log10")
-
-
 all_long <- allmod %>%
   pivot_longer(!Date, names_to = "model", values_to = "melt")
 
@@ -524,16 +506,14 @@ all_long$type = substr(all_long$model,1,2)
 all_melt <- all_long %>%
   filter(str_detect(type, "me"))
 
-write.csv(all_melt, "all_melt.csv")
+#write.csv(all_melt, "all_melt.csv")
 
 all_melt <- read.csv("all_melt.csv") %>%
   mutate(Date = ymd(Date))
 
-
 all_melt <- all_melt %>%
   group_by(model) %>%
   mutate(melt_cum = cumsum(melt))
-
 
 mod_names <- c(`melt_b1` = "B1",
                `melt_b2` = "B2",
@@ -541,6 +521,24 @@ mod_names <- c(`melt_b1` = "B1",
                `melt_d` = "D",
                `melt_e1` = "E1",
                `melt_e2` = "E2")
+
+PlotFormat = theme(axis.text=element_text(size=20, color="black"),
+                   axis.title.x=element_text(size=22, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+                   axis.title.y=element_text(size=22, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
+                   plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
+                   legend.title=element_text(size=18, color="black"),                                                                    
+                   legend.text=element_text(size=18, color="black"),                                                                   
+                   legend.position = "right", 
+                   panel.grid.major = element_line(colour = "grey80"),
+                   #panel.grid.minor = element_line(colour = "grey80"),
+                   #panel.grid.major = element_blank(), 
+                   #panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   #axis.line = element_line(colour = "black"),
+                   strip.text = element_text(size=28),
+                   panel.border = element_rect(colour = "black", fill=NA, size=1),
+                   legend.key=element_blank())
+
 
 PLOT ="melt_1to1_cum"
 ggplot(all_melt) +
