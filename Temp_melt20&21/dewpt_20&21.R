@@ -790,10 +790,14 @@ ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 ##########################################################################
 all20 <- all20 %>%
-  mutate(year = "2020")
+  mutate(year = "2020") %>%
+  filter(Datetime > ymd_hms("2020-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2020-07-01 00:00:00"))
 
 all21 <- all21 %>%
-  mutate(year = "2021")
+  mutate(year = "2021") %>%
+  filter(Datetime > ymd_hms("2021-04-30 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
 
 all <- rbind(all20, all21)
 
@@ -809,12 +813,14 @@ ggplot(allmp4, aes(x=AirT_C, y=dewpoint)) +
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 alledit <- all %>%
-  filter(dewpoint > -20)
+  filter(dewpoint > -30)
 
 PLOT = "Ta vs Tdew for all"
 ggplot(alledit, aes(x=AirT_C, y=dewpoint)) +
   geom_point() +
-  geom_abline(slope = 1, size=1, color="red") + 
-  facet_wrap(~year, scales="free_x")
+  geom_abline(slope = 1, size=1, color="blue") + 
+  facet_wrap(~year) + PlotFormat +
+  labs(x=expression("Air temperature " (degree*C)),
+                    y=expression("Dew point temperature " (degree*C)))
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
