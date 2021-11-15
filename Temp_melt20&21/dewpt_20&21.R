@@ -72,12 +72,12 @@ all_mayjun21 <- all21 %>%
 td <- ggplot(all_mayjun21) +
   geom_line(aes(x=Datetime, y=dewpoint, color=ID))
 
-ggplotly(td)
-all21 <- all21 %>%
-  filter(!str_detect(ID, "MP9")) %>%
-  filter(!str_detect(ID, "MP8")) %>%
-  filter(!str_detect(ID, "HD9")) %>%
-  filter(!str_detect(ID, "HD8"))
+#ggplotly(td)
+#all21 <- all21 %>%
+#  filter(!str_detect(ID, "MP9")) %>%
+#  filter(!str_detect(ID, "MP8")) %>%
+#  filter(!str_detect(ID, "HD9")) %>%
+#  filter(!str_detect(ID, "HD8"))
 
 ############################################################################
 #data are set up - run models now for 2020 (get slope, r2, and p-value)
@@ -178,13 +178,13 @@ slope_day <- slope %>%
   summarize(avgslope = mean(slope_Ckm),
             avgR2 = mean(r2),
             medslope = median(slope_Ckm),
-            meanp = mean(pval)) %>%
-  filter(avgR2 >0.2)
+            meanp = mean(pval)) #%>%
+  #mutate(medslope = ifelse(avgR2 >0.2, medslope, NA))
 
 
 
-PLOT = "DTEG daily_20&21_byr2"
-ggplot(slope_day, aes(x=date, y=medslope)) +
+PLOT = "DTEG daily_20&21_byr2all"
+daily_r2all <- ggplot(slope_day, aes(x=date, y=medslope)) +
   geom_point(aes(colour=avgR2), size=3) + 
   ylim(-10,10) +
   scale_x_date(date_labels = "%b", breaks="1 month") +
@@ -199,6 +199,31 @@ ggplot(slope_day, aes(x=date, y=medslope)) +
   guides(linetype = guide_legend(order=1))
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+PLOT="daily_r2_0.2_noalp"
+daily_r2_0.2_noalp <- ggplot(slope_day, aes(x=date, y=medslope)) +
+  geom_point(aes(colour=avgR2), size=3) + 
+  ylim(-10,10) +
+  scale_x_date(date_labels = "%b", breaks="1 month") +
+  labs(x= "", y=expression("Daily median DTEG " (degree*C/km)), color=expression(paste("R"^2))) +
+  #scale_x_date(date_labels = "%b", date_break = "1 month") +
+  geom_hline(aes(yintercept=-5.1, linetype="Kunkel (1989)"), color="Red", size=1.25) +
+  facet_wrap(~year, scales="free_x") + 
+  scale_color_gradient(low='grey', high='black')+
+  scale_linetype_manual(name ="", values = c('solid')) +
+  PlotFormat +
+  theme(panel.spacing = unit(0.5, "cm")) +
+  guides(linetype = guide_legend(order=1))
+
+daily_r2_0.2_noalp
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+PLOT="Daily_DTEGstack"
+daily_hrly <- ggarrange(daily_r2all, daily_r2_0.2_noalp,
+                        nrow=2)
+daily_hrly
+ggsave(paste(PLOT,".png",sep=""), width = 12, height = 10)
+
 
 PLOT = "DTEG daily_20&21_byp"
 ggplot(slope_day, aes(x=date, y=medslope)) +
@@ -498,7 +523,7 @@ dew21_hd <- all21 %>%
   group_by(Datetime) %>%
   mutate(NAcount = sum(is.na(dewpoint))) %>% 
   filter(!any(NAcount > 2)) %>%
-  filter(Datetime > ymd_hms("2021-05-1 11:00:00")) %>%
+  filter(Datetime > ymd_hms("2021-05-01 00:00:00")) %>%
   filter(Datetime < ymd_hms("2021-07-01 00:00:00"))
 
 
@@ -518,10 +543,10 @@ slope21_hd <- dew21_hd %>%
   group_nest(Datetime) %>%
   mutate(model = map(data, fit_model)) %>%
   mutate(slope = map_dbl(model, get_slope)) %>%
-  mutate(slope_Ckm = slope*1000) #%>%
-  #mutate(pear = map(data, pearson)) %>%
-  #mutate(pval = map_dbl(pear, pval)) %>%
-  #mutate(df = map_dbl(pear, df))
+  mutate(slope_Ckm = slope*1000) %>%
+  mutate(pear = map(data, pearson)) %>%
+  mutate(pval = map_dbl(pear, pval)) %>%
+  mutate(df = map_dbl(pear, df))
 
 slope21_hd <- slope21_hd %>%
   add_column(r2 = dew21_r_hd$r2) %>%
@@ -553,10 +578,10 @@ slope21_mp <- dew21_mp %>%
   group_nest(Datetime) %>%
   mutate(model = map(data, fit_model)) %>%
   mutate(slope = map_dbl(model, get_slope)) %>%
-  mutate(slope_Ckm = slope*1000)# %>%
-  #mutate(pear = map(data, pearson)) %>%
-  #mutate(pval = map_dbl(pear, pval)) %>%
-  #mutate(df = map_dbl(pear, df))
+  mutate(slope_Ckm = slope*1000) %>%
+  mutate(pear = map(data, pearson)) %>%
+  mutate(pval = map_dbl(pear, pval)) %>%
+  mutate(df = map_dbl(pear, df))
 
 slope21_mp <- slope21_mp %>%
   add_column(r2 = dew21_r_mp$r2) %>%
@@ -575,9 +600,6 @@ slope21_side <- slope21_side %>%
 
 slope20_side <- slope20_side %>%
   mutate(year = 2020)
-
-slope20_side <- slope20_side %>%
-  select(-c(pear, pval,df))
 
 slope_allside <- rbind(slope20_side, slope21_side)
 
