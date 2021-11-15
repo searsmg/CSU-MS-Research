@@ -112,7 +112,7 @@ slope_day_stats <- slope_day %>%
             medslope = median(medslope))
 
 slope_day_edit <- slope_day %>%
-  filter(avgR2 > 0.2)
+  filter(avgR2 > 0.5)
 
 PLOT = "TEG daily_20&21_r2"
 daily <- ggplot(slope_day_edit, aes(x=date, y=medslope)) +
