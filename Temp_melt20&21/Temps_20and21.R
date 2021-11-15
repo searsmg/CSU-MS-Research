@@ -8,6 +8,7 @@ library(gridExtra)
 library(scales)
 library(RColorBrewer)
 library(tidyverse)
+library(ggpubr)
 
 rm(list = ls()) 
 
@@ -101,7 +102,6 @@ ggplot(slope_day, aes(x=date, y=medslope)) +
   theme(panel.spacing = unit(0.5, "cm")) +
   guides(linetype = guide_legend(order=1))
 
-
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 #more stats
@@ -115,7 +115,7 @@ slope_day_edit <- slope_day %>%
   filter(avgR2 > 0.2)
 
 PLOT = "TEG daily_20&21_r2"
-ggplot(slope_day_edit, aes(x=date, y=medslope)) +
+daily <- ggplot(slope_day_edit, aes(x=date, y=medslope)) +
   geom_point(aes(colour=avgR2), size=3) + 
   ylim(-10,10) +
   scale_x_date(date_labels = "%b", breaks="1 month") +
@@ -131,6 +131,7 @@ ggplot(slope_day_edit, aes(x=date, y=medslope)) +
   #theme(panel.grid.major = element_line(colour = "grey80"))
         #panel.grid.minor = element_line(colour = "grey80")) +
 
+daily
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 
@@ -179,7 +180,7 @@ slope_hr_stats <- slope_hour %>%
             avgr2sign = mean(avgR2))
 
 PLOT = "TEG hr"
-ggplot(slope_hour, aes(x=hour, y=avgslope)) +
+hr <- ggplot(slope_hour, aes(x=hour, y=avgslope)) +
   geom_point(aes(colour=avgR2), size=3) + 
   ylim(-10,10) +
   #scale_x_date(date_labels = "%b", breaks="1 month") +
@@ -189,10 +190,17 @@ ggplot(slope_hour, aes(x=hour, y=avgslope)) +
   scale_color_gradient(low='grey', high='black')+
   scale_linetype_manual(name ="", values = c('solid')) +
   PlotFormat +
-  guides(linetype = guide_legend(order=1))
+  guides(linetype = guide_legend(order=1))+
+  scale_x_continuous(breaks=seq(0, 23, 4))
 
+hr
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
+PLOT="Daily_hourly_stack"
+daily_hrly <- ggarrange(daily, hr,
+                        nrow=2)
+daily_hrly
+ggsave(paste(PLOT,".png",sep=""), width = 10, height = 9)
 
 PLOT="heatmap_slope"
 slopefig <- ggplot(slope_edit, aes(x=date, y=hour, fill=Slope_degCkm)) +
@@ -494,16 +502,18 @@ uz_new <- rbind(uz21_new, uz20_new)
 uz_new <- uz_new %>%
   mutate(year = year(Datetime))
 
-uz_new$sign = factor(uz_new$sign, levels=c('positive TEG','negative TEG'))
+#uz_new$sign = factor(uz_new$sign, levels=c('positive TEG','negative TEG'))
 
 PLOT="uz_boxplot"
-ggplot(uz_new, aes(x=bin, y=Slope_degCkm)) +
-   geom_boxplot()+
-  facet_grid(sign~year, scales="free_y") +
-  #PlotFormat +
+ggplot(uz_new, aes(x=bin, y=Slope_degCkm, fill=sign)) +
+  geom_boxplot()+
+  facet_grid(~year) +
+  scale_fill_manual(values=c("red", "light blue")) +
   scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
   PlotFormat+
-  labs(x="Windspeed (m/s)", y=expression("TEG " (degree*C/km)))+
+  labs(x="Wind speed (m/s)", y=expression("TEG " (degree*C/km)),
+       fill="") +
+  theme(legend.position = "bottom")
 
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
