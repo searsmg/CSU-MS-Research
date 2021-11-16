@@ -386,8 +386,8 @@ main <- ggplot() +
   geom_line(data=mp4e2, aes(Date, swe_e2, color="E2",  linetype="E2"), size=1) +
   geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
   scale_shape_manual(values=17) +
-  scale_color_manual(name="models", values=c("A"="#009E73",
-                              "B1"="#0072B2", "B2"="#D55E00", "C"="#CC79A7","D"="#999999", "E1" = "#E69F00", "E2" = "#56B4E9")) +
+  scale_color_manual(name="models", values=c("A"="#b35806",
+                              "B1"="#e08214", "B2"="#fdb863", "C"="#d8daeb","D"="#b2abd2", "E1" = "#8073ac", "E2" = "#542788")) +
   scale_linetype_manual(values = c("A"="solid",
                                    "B1"="dotdash", "B2"="dotdash", "C"="solid","D"="solid", "E1" = "dashed", "E2" = "dashed")) +
   labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
@@ -395,9 +395,9 @@ main <- ggplot() +
   #theme(legend.position = c(0.95, 0.8)) +
   scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
   guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
-         color=guide_legend(keywidth = 3, keyheight = 1)) +
-  annotation_custom(ggplotGrob(mini), xmin = as.Date("2021-05-1"), xmax = as.Date("2021-06-1"), 
-                    ymin = 0, ymax = 300)
+         color=guide_legend(keywidth = 3, keyheight = 1)) 
+  #annotation_custom(ggplotGrob(mini), xmin = as.Date("2021-05-1"), xmax = as.Date("2021-06-1"), 
+#                    ymin = 0, ymax = 300)
 main
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
