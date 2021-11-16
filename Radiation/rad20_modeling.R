@@ -20,7 +20,10 @@ setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Radiati
 #hourly rad data
 rad20 <- read.csv(file="rad20.csv", 
                   header=TRUE) %>%
-  mutate(Datetime = mdy_hm(Datetime))
+  mutate(Datetime = mdy_hm(Datetime)) %>%
+  filter(Datetime > ymd_hms("2020-05-01 00:00:00")) %>%
+  filter(Datetime < ymd_hms("2020-07-01 00:00:00"))
+
 
 #JW21daily <- read.csv("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/SNOTEL/dailyjw.csv") %>%
 #  mutate(Date = mdy(Date))
