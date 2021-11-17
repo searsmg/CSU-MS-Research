@@ -14,6 +14,8 @@ library(gridExtra)
 library(stringr)
 library(hydroGOF)
 library(cowplot)
+library(ggpubr)
+library(patchwork)
 
 rm(list = ls()) 
 
@@ -434,7 +436,108 @@ mini <- ggplot() +
 
 mini
 
-####
+##################################################################
+#experimenting with better SWE comparison plots
+
+
+
+#all models together
+
+custombreaks <- seq(0, 700, 50)
+bmod <- ggplot() + 
+  geom_line(data=mp4a, aes(Date, swe_a, color="A", linetype="A"), size=1) +
+  geom_line(data=mp4b1, aes(Date, swe_b1, color="B1", linetype="B1"), size=1) +
+  geom_line(data=mp4b2, aes(Date, swe_b2, color="B2", linetype="B2"), size=1) +
+  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
+  scale_shape_manual(values=17) +
+  scale_color_manual(name="models", values=c("A"="black",
+                                             "B1"="#5e3c99", "B2"="#5e3c99")) +
+  scale_linetype_manual(values = c("A"="solid",
+                                   "B1"="solid", "B2"="dotdash")) +
+  labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
+  PlotFormat + 
+  scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
+  guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
+         color=guide_legend(keywidth = 3, keyheight = 1)) +
+  theme(axis.text.x=element_blank(),
+        axis.title.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.margin = margin(.5,.5,-1,0.5))
+
+bmod
+
+cmod <- ggplot() + 
+  geom_line(data=mp4a, aes(Date, swe_a, color="A", linetype="A"), size=1) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="C", linetype="C"), size=1) +
+  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
+  scale_shape_manual(values=17) +
+  scale_color_manual(name="models", values=c("A"="black",
+                                             "C"="#e66101")) +
+  scale_linetype_manual(values = c("A"="solid",
+                                   "C"="solid")) +
+  labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
+  PlotFormat + 
+  scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
+  guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
+         color=guide_legend(keywidth = 3, keyheight = 1)) +
+  theme(legend.title=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.text.y=element_blank(),
+        plot.margin = margin(.5,.5,-4,0.5))
+
+cmod
+
+dmod <- ggplot() + 
+  geom_line(data=mp4a, aes(Date, swe_a, color="A", linetype="A"), size=1) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="D", linetype="D"), size=1) +
+  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
+  scale_shape_manual(values=17) +
+  scale_color_manual(name="models", values=c("A"="black",
+                                             "D"="#e66101")) +
+  scale_linetype_manual(values = c("A"="solid",
+                                   "D"="solid")) +
+  labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
+  PlotFormat + 
+  scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
+  guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
+         color=guide_legend(keywidth = 3, keyheight = 1)) +
+  theme(legend.title=element_blank(),
+        plot.margin = margin(.5,.5,-1,0.5))
+
+dmod
+
+emod <- ggplot() + 
+  geom_line(data=mp4a, aes(Date, swe_a, color="A", linetype="A"), size=1) +
+  geom_line(data=mp4e1, aes(Date, swe_e1, color="E1", linetype="E1"), size=1) +
+  geom_line(data=mp4e2, aes(Date, swe_e2, color="E2",  linetype="E2"), size=1) +
+  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
+  scale_shape_manual(values=17) +
+  scale_color_manual(name="models", values=c("A"="black",
+                                             "E1"="#e66101",
+                                             "E2" = "#e66101")) +
+  scale_linetype_manual(values = c("A"="solid",
+                                   "E1"="solid",
+                                   "E2"="dotdash")) +
+  labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
+  PlotFormat + 
+  scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
+  guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
+         color=guide_legend(keywidth = 3, keyheight = 1)) +
+  theme(legend.title=element_blank(),
+        axis.text.y=element_blank(),
+        axis.title.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        plot.margin = unit(c(.5,.5,-1,0.5), "cm"))
+
+emod
+
+PLOT="SWEcompare"
+combined <- bmod + cmod + dmod + emod 
+combined
+##################################################################################
 allmelt <- ggplot() + 
   geom_line(data=mp4a, aes(Date, swe_a, color="A"), size=1.25) +
   geom_line(data=mp4b1, aes(Date, swe_b1, color="B1"), size=1.25) +
