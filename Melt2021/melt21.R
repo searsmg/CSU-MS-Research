@@ -397,7 +397,8 @@ main <- ggplot() +
   #theme(legend.position = c(0.95, 0.8)) +
   scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
   guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
-         color=guide_legend(keywidth = 3, keyheight = 1)) 
+         color=guide_legend(keywidth = 3, keyheight = 1)) +
+  theme(legend.position = c(0.92, 0.66))
   #annotation_custom(ggplotGrob(mini), xmin = as.Date("2021-05-1"), xmax = as.Date("2021-06-1"), 
 #                    ymin = 0, ymax = 300)
 main
@@ -438,9 +439,6 @@ mini
 
 ##################################################################
 #experimenting with better SWE comparison plots
-
-
-
 #all models together
 
 custombreaks <- seq(0, 700, 50)
@@ -461,8 +459,8 @@ bmod <- ggplot() +
          color=guide_legend(keywidth = 3, keyheight = 1)) +
   theme(axis.text.x=element_blank(),
         axis.title.x=element_blank(),
-        axis.ticks.x=element_blank(),
-        plot.margin = margin(.5,.5,-1,0.5))
+        axis.ticks.x=element_blank()) +
+  theme(legend.position = "none")
 
 bmod
 
@@ -485,8 +483,8 @@ cmod <- ggplot() +
         axis.ticks.x=element_blank(),
         axis.title.y=element_blank(),
         axis.ticks.y=element_blank(),
-        axis.text.y=element_blank(),
-        plot.margin = margin(.5,.5,-4,0.5))
+        axis.text.y=element_blank())+
+  theme(legend.position = "none")
 
 cmod
 
@@ -504,8 +502,8 @@ dmod <- ggplot() +
   scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
   guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
          color=guide_legend(keywidth = 3, keyheight = 1)) +
-  theme(legend.title=element_blank(),
-        plot.margin = margin(.5,.5,-1,0.5))
+  theme(legend.title=element_blank()) +
+  theme(legend.position = "none")
 
 dmod
 
@@ -529,14 +527,15 @@ emod <- ggplot() +
   theme(legend.title=element_blank(),
         axis.text.y=element_blank(),
         axis.title.y=element_blank(),
-        axis.ticks.y=element_blank(),
-        plot.margin = unit(c(.5,.5,-1,0.5), "cm"))
+        axis.ticks.y=element_blank()) +
+  theme(legend.position = "none")
 
 emod
 
 PLOT="SWEcompare"
-combined <- bmod + cmod + dmod + emod 
+combined <- bmod + cmod + dmod + emod + plot_annotation(theme = theme(plot.margin = margin(0,1,-30,0)))
 combined
+
 ##################################################################################
 allmelt <- ggplot() + 
   geom_line(data=mp4a, aes(Date, swe_a, color="A"), size=1.25) +
@@ -699,3 +698,21 @@ rmse(meltcum_wide$melt_a, meltcum_wide$melt_c)
 rmse(meltcum_wide$melt_a, meltcum_wide$melt_d)
 rmse(meltcum_wide$melt_a, meltcum_wide$melt_e1)
 rmse(meltcum_wide$melt_a, meltcum_wide$melt_e2)
+
+#####################################################
+#plot of residuals
+
+res <- read.csv("residuals.csv")
+
+res <- res %>%
+  pivot_longer(!Date, names_to = "models", values_to = "diff")
+
+
+
+
+ggplot(res, aes(x=models, y=diff)) +
+  geom_col(aes(fill=models), position="dodge") + PlotFormat +
+  geom_hline(yintercept=0, color="black") +
+  ylim(-50,200) +
+  theme(legend.position = "none") +
+  facet_wrap(~Date, ncol=3)
