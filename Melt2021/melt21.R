@@ -388,10 +388,10 @@ main <- ggplot() +
   geom_line(data=mp4e2, aes(Date, swe_e2, color="E2",  linetype="E2"), size=1) +
   geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
   scale_shape_manual(values=17) +
-  scale_color_manual(name="models", values=c("A"="#b35806",
-                              "B1"="#e08214", "B2"="#fdb863", "C"="#d8daeb","D"="#b2abd2", "E1" = "#8073ac", "E2" = "#542788")) +
+  scale_color_manual(name="models", values=c("A"="#1b9e77",
+                              "B1"="#d95f02", "B2"="#d95f02", "C"="#7570b3","D"="#e7298a", "E1" = "#66a61e", "E2" = "#66a61e")) +
   scale_linetype_manual(values = c("A"="solid",
-                                   "B1"="dotdash", "B2"="dotdash", "C"="solid","D"="solid", "E1" = "dashed", "E2" = "dashed")) +
+                                   "B1"="solid", "B2"="dashed", "C"="solid","D"="solid", "E1" = "solid", "E2" = "dashed")) +
   labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
   PlotFormat + 
   #theme(legend.position = c(0.95, 0.8)) +
@@ -647,10 +647,10 @@ ggplot(all_melt) +
   geom_point(aes(x=melt_a_cum, y=melt_cum, color=model), size=2.5) +
   facet_wrap(~model, labeller = as_labeller(mod_names)) +
   theme_bw() + PlotFormat +
-  scale_color_manual(values=c("melt_b1"="#0072B2", "melt_b2"="#D55E00", 
-                                   "melt_c"="#CC79A7",
-                                   "melt_d"="#999999", "melt_e1" = "#E69F00", 
-                                   "melt_e2" = "#56B4E9")) +
+  scale_color_manual(values=c("melt_b1"="#d95f02", "melt_b2"="#d95f02", 
+                                   "melt_c"="#7570b3",
+                                   "melt_d"="#e7298a", "melt_e1" = "#66a61e", 
+                                   "melt_e2" = "#66a61e")) +
   geom_abline(intercept = 0, slope = 1, size=1) +
   theme(legend.position = "none") +
   labs(x="Scenario A cumulative melt (mm)", y="Cumulative melt (mm)") 
