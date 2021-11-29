@@ -12,6 +12,8 @@ library(RColorBrewer)
 library(plotly)
 library(tidyr)
 library(tibble)
+library(ggpubr)
+library(patchwork)
 
 rm(list = ls())
 
@@ -178,7 +180,7 @@ slope_day <- slope %>%
   summarize(avgslope = mean(slope_Ckm),
             avgR2 = mean(r2),
             medslope = median(slope_Ckm),
-            meanp = mean(pval)) #%>%
+            meanp = mean(pval)) #%>% 
   #mutate(medslope = ifelse(avgR2 >0.2, medslope, NA))
 
 mean(slope_day$avgslope)
@@ -193,13 +195,15 @@ daily_r2all <- ggplot(slope_day, aes(x=date, y=medslope)) +
   scale_x_date(date_labels = "%b", breaks="1 month") +
   labs(x= "", y=expression("Daily median DTEG " (degree*C/km)), color=expression(paste("R"^2))) +
   #scale_x_date(date_labels = "%b", date_break = "1 month") +
-  geom_hline(aes(yintercept=-5.1, linetype="Kunkel (1989)"), color="Red", size=1.25) +
+  geom_hline(aes(yintercept=-5.1, linetype="Kunkel \n(1989)"), color="Red", size=1.25) +
   facet_wrap(~year, scales="free_x") + 
   scale_color_gradient(low='grey', high='black')+
   scale_linetype_manual(name ="", values = c('solid')) +
   PlotFormat +
   theme(panel.spacing = unit(0.5, "cm")) +
   guides(linetype = guide_legend(order=1))
+
+daily_r2all
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
@@ -210,7 +214,7 @@ daily_r2_0.2_noalp <- ggplot(slope_day, aes(x=date, y=medslope)) +
   scale_x_date(date_labels = "%b", breaks="1 month") +
   labs(x= "", y=expression("Daily median DTEG " (degree*C/km)), color=expression(paste("R"^2))) +
   #scale_x_date(date_labels = "%b", date_break = "1 month") +
-  geom_hline(aes(yintercept=-5.1, linetype="Kunkel (1989)"), color="Red", size=1.25) +
+  geom_hline(aes(yintercept=-5.1, linetype="Kunkel \n(1989)"), color="Red", size=1.25) +
   facet_wrap(~year, scales="free_x") + 
   scale_color_gradient(low='grey', high='black')+
   scale_linetype_manual(name ="", values = c('solid')) +
@@ -223,8 +227,10 @@ ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 PLOT="Daily_DTEGstack"
 daily_hrly <- ggarrange(daily_r2all, daily_r2_0.2_noalp,
-                        nrow=2)
+                        nrow=2, common.legend=T,
+                        legend="right")
 daily_hrly
+
 ggsave(paste(PLOT,".png",sep=""), width = 12, height = 10)
 
 
@@ -285,7 +291,7 @@ slope_edit$date <- as.Date(format(slope_edit$Datetime, format = "%Y-%m-%d"))
 PLOT="heatmap_slope"
 slopefig <- ggplot(slope_edit, aes(x=date, y=hour, fill=slope_Ckm)) +
   geom_tile() + facet_grid(~year, scale="free_x") +
-  scale_fill_distiller(palette = 'RdYlBu')+
+  scale_fill_distiller(palette = 'RdYlBu', limits=c(-20,20))+
   labs(fill="DTEG", x="Day of year", y="Hour") + PlotFormat +
   scale_x_date(date_labels = "%b", date_break = "1 month") +
   scale_y_continuous(breaks=seq(0, 23, 4)) +
