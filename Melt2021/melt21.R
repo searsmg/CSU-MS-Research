@@ -657,6 +657,21 @@ ggplot(all_melt) +
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
+c_melt <- all_melt %>%
+  filter(model == "melt_c")
+
+PLOT ="melt_1to1_cum_AandC"
+ggplot(c_melt) +
+  geom_point(aes(x=melt_a_cum, y=melt_cum), color="#7570b3", size=2.5) +
+  theme_bw() + PlotFormat +
+  geom_abline(intercept = 0, slope = 1, size=1) +
+  theme(legend.position = "none") +
+  labs(x="Scenario A cumulative melt (mm)", y="Scenario C cumulative melt (mm)") 
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+
+
 #get NSE values
 NSE(allmod$melt_a, allmod$melt_b1)
 NSE(allmod$melt_a, allmod$melt_b2)
