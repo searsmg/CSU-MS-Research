@@ -90,7 +90,7 @@ PLOT = "TEG daily_20&21"
 ggplot(slope_day, aes(x=date, y=medslope)) +
   geom_hline(aes(yintercept=0), color="black") +
   geom_point(aes(colour=avgR2), size=3) + 
-  ylim(-10,10) +
+  ylim(-10,15) +
   scale_x_date(date_labels = "%b", breaks="1 month") +
   labs(x= "", y=expression("Daily median TEG " (degree*C/km)), color=expression(paste("R"^2))) +
   #scale_x_date(date_labels = "%b", date_break = "1 month") +
@@ -112,12 +112,12 @@ slope_day_stats <- slope_day %>%
             medslope = median(medslope))
 
 slope_day_edit <- slope_day %>%
-  filter(avgR2 > 0.5)
+  filter(avgR2 > 0.2)
 
 PLOT = "TEG daily_20&21_r2"
 daily <- ggplot(slope_day_edit, aes(x=date, y=medslope)) +
   geom_point(aes(colour=avgR2), size=3) + 
-  ylim(-10,10) +
+  ylim(-10,15) +
   scale_x_date(date_labels = "%b", breaks="1 month") +
   labs(x= "", y=expression("Daily median TEG " (degree*C/km)), color=expression(paste("R"^2))) +
   #scale_x_date(date_labels = "%b", date_break = "1 month") +
