@@ -140,9 +140,18 @@ slope21 <- all21 %>%
 #add derived r2 to slope 21 (with rest of data)
 slope21 <- slope21 %>%
   add_column(r2 = all21_r$r2)
-
+  
 ##########################################################################
+#pulling out example timesteps
+all21_example <- all21 %>%
+  filter(Datetime > ymd_hms("2021-05-14 23:00:00")) %>%
+  filter(Datetime < ymd_hms("2021-05-16 00:00:00"))
 
+
+ggplot(all21_example, aes(x=Elevation, y=dewpoint)) +
+  geom_point() + PlotFormat
+
+############################################
 dew20 <- slope20 %>%
   mutate(year = "2020") %>%
   select(-c(data, model, pear)) %>%
@@ -182,6 +191,11 @@ slope_day <- slope %>%
             medslope = median(slope_Ckm),
             meanp = mean(pval)) #%>% 
   #mutate(medslope = ifelse(avgR2 >0.2, medslope, NA))
+
+#example day
+all21_1day <- all21 %>%
+  filter(Datetime == date("2021-06-27"))
+
 
 mean(slope_day$avgslope)
 mean(slope_day$avgR2)
