@@ -376,10 +376,10 @@ palette_OkabeIto <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442",
 safe_pal <- carto_pal(12, "Safe")
 
 #all models together
-PLOT="allmelt"
+PLOT="allmelt2"
 custombreaks <- seq(0, 700, 50)
 main <- ggplot() + 
-  geom_line(data=mp4a, aes(Date, swe_a, color="A", linetype="A"), size=1) +
+  geom_line(data=mp4a, aes(Date, swe_a, color="A", linetype="A"), size=1.5) +
   geom_line(data=mp4b1, aes(Date, swe_b1, color="B1", linetype="B1"), size=1) +
   geom_line(data=mp4b2, aes(Date, swe_b2, color="B2", linetype="B2"), size=1) +
   geom_line(data=mp4c, aes(Date, swe_c, color="C", linetype="C"), size=1) +
@@ -388,7 +388,7 @@ main <- ggplot() +
   geom_line(data=mp4e2, aes(Date, swe_e2, color="E2",  linetype="E2"), size=1) +
   geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
   scale_shape_manual(values=17) +
-  scale_color_manual(name="models", values=c("A"="#1b9e77",
+  scale_color_manual(name="models", values=c("A"="black",
                               "B1"="#d95f02", "B2"="#d95f02", "C"="#7570b3","D"="#e7298a", "E1" = "#66a61e", "E2" = "#66a61e")) +
   scale_linetype_manual(values = c("A"="solid",
                                    "B1"="solid", "B2"="dashed", "C"="solid","D"="solid", "E1" = "solid", "E2" = "dashed")) +
