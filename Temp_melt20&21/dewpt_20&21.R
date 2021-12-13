@@ -14,6 +14,7 @@ library(tidyr)
 library(tibble)
 library(ggpubr)
 library(patchwork)
+library(devtools)
 
 rm(list = ls())
 
@@ -21,7 +22,7 @@ rm(list = ls())
 setwd("C:/Users/sears/Documents/Research/Snow_Hydro_Research/Thesis/Data/Dewpt Temp/For R/")
 
 #add a plot format for later
-PlotFormat = theme(axis.text=element_text(size=20, color="black"),
+PlotFormat = theme(axis.text=element_text(size=18, color="black"),
                    axis.title.x=element_text(size=22, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
                    axis.title.y=element_text(size=22, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
                    plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
@@ -144,12 +145,27 @@ slope21 <- slope21 %>%
 ##########################################################################
 #pulling out example timesteps
 all21_example <- all21 %>%
-  filter(Datetime > ymd_hms("2021-05-14 23:00:00")) %>%
-  filter(Datetime < ymd_hms("2021-05-16 00:00:00"))
+  filter(Datetime == ymd_hms("2021-05-21 14:00:00"))
+
+PLOT="temp 5-21-21 at 14"
+ggplot(all21_example, aes(x=Elevation, y=AirT_C)) +
+  geom_point(size=4, color="blue") + PlotFormat +
+  labs(x="Elevation (m)", y=expression("Air temperature " (degree*C)))
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
+all21_ex2 <- all21 %>%
+  filter(Datetime == ymd_hms("2021-05-21 5:00:00"))
+
+PLOT="temp 5-21-21 at 5"
+ggplot(all21_ex2, aes(x=Elevation, y=AirT_C)) +
+  geom_point(size=4, color="blue") + PlotFormat +
+  labs(x="Elevation (m)", y=expression("Air temperature " (degree*C))) +
+  geom_smooth(method = "lm", se = FALSE) +
+  stat_cor(label.x = 3300, label.y = 5) +
+  stat_regline_equation(label.x = 3350, label.y = 6)
 
 
-ggplot(all21_example, aes(x=Elevation, y=dewpoint)) +
-  geom_point() + PlotFormat
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 ############################################
 dew20 <- slope20 %>%
@@ -405,7 +421,7 @@ ggplot(uz20_new, aes(x=uz, y=slope_Ckm)) +
   scale_color_gradient(low='grey', high='black')
 
 ggplot(uz20, aes(x=uz, y=Slope_degCkm)) +
-  geom_point(aes(colour=R2)) + ylim(-20,30)
+  geom_point(aes(colour=r2)) + ylim(-20,30)
 
 ggplot(uz20_new, aes(x=bin, y=Slope_degCkm)) +
   geom_boxplot()+
@@ -427,7 +443,7 @@ ggplot(uz_new, aes(x=bin, y=slope_Ckm, fill=sign)) +
   geom_boxplot()+
   facet_grid(~year) +
   scale_fill_manual(values=c("red", "light blue")) +
-  scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
+  #scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
   PlotFormat+
   labs(x="Wind speed (m/s)", y=expression("DTEG " (degree*C/km)),
        fill="") +
