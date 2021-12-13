@@ -502,14 +502,14 @@ uz_new <- rbind(uz21_new, uz20_new)
 uz_new <- uz_new %>%
   mutate(year = year(Datetime))
 
-#uz_new$sign = factor(uz_new$sign, levels=c('positive TEG','negative TEG'))
+uz_new$sign = factor(uz_new$sign, levels=c('positive TEG','negative TEG'))
 
-PLOT="uz_boxplot"
+PLOT="uz_boxplot2"
 ggplot(uz_new, aes(x=bin, y=Slope_degCkm, fill=sign)) +
   geom_boxplot()+
   facet_grid(~year) +
   scale_fill_manual(values=c("red", "light blue")) +
-  scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
+  #scale_x_discrete(labels = c("0-1", "1-2", "2-3","3-4", "4-5", "5-6", "6-7", "7-8", "8-9")) +
   PlotFormat+
   labs(x="Wind speed (m/s)", y=expression("TEG " (degree*C/km)),
        fill="") +
