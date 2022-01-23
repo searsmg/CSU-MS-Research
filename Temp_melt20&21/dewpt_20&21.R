@@ -151,19 +151,30 @@ PLOT="temp 5-21-21 at 14"
 ggplot(all21_example, aes(x=Elevation, y=AirT_C)) +
   geom_point(size=4, color="blue") + PlotFormat +
   labs(x="Elevation (m)", y=expression("Air temperature " (degree*C)))
+
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
 all21_ex2 <- all21 %>%
   filter(Datetime == ymd_hms("2021-05-21 5:00:00"))
 
-PLOT="temp 5-21-21 at 5"
-ggplot(all21_ex2, aes(x=Elevation, y=AirT_C)) +
-  geom_point(size=4, color="blue") + PlotFormat +
+PLOT="temp 5-21-21 at 5 blue and 14 black"
+ggplot() +
+  geom_point(data=all21_ex2, aes(x=Elevation, y=AirT_C),
+             size=4, color="blue") + PlotFormat +
   labs(x="Elevation (m)", y=expression("Air temperature " (degree*C))) +
-  geom_smooth(method = "lm", se = FALSE) +
-  stat_cor(label.x = 3300, label.y = 5) +
-  stat_regline_equation(label.x = 3350, label.y = 6)
+  geom_smooth(data=all21_ex2, aes(x=Elevation, y=AirT_C), 
+              method = "lm", se = FALSE, color="blue", linetype="dashed") +
+  geom_point(data=all21_example, aes(x=Elevation, y=AirT_C),
+             size=4) +
+  geom_smooth(data=all21_example, aes(x=Elevation, y=AirT_C), 
+              method = "lm", se = FALSE, color="black", linetype="dashed")
+  
+  
+  
+  
 
+#stat_cor(label.x = 3300, label.y = 5) +
+  #stat_regline_equation(label.x = 3350, label.y = 6)
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
