@@ -26,8 +26,8 @@ PlotFormat = theme(axis.text=element_text(size=20, color="black"),
                    axis.title.x=element_text(size=22, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
                    axis.title.y=element_text(size=22, vjust=0.5,  margin=margin(t=20, r=20, b=20, l=20), color="black"),              
                    plot.title=element_text(size=26,face="bold",hjust=0.5, margin=margin(t=20, r=20, b=20, l=20)),      
-                   legend.title=element_text(size=18, color="black"),                                                                    
-                   legend.text=element_text(size=18, color="black"),                                                                   
+                   legend.title=element_text(size=14, color="black"),                                                                    
+                   legend.text=element_text(size=14, color="black"),                                                                   
                    legend.position = "right", 
                    #panel.grid.major = element_blank(), 
                    #panel.grid.minor = element_blank(),
@@ -389,7 +389,7 @@ main <- ggplot() +
   geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
   scale_shape_manual(values=17) +
   scale_color_manual(name="models", values=c("A"="black",
-                              "B1"="#d95f02", "B2"="#d95f02", "C"="#7570b3","D"="#e7298a", "E1" = "#66a61e", "E2" = "#66a61e")) +
+                                             "B1"="#d95f02", "B2"="#d95f02", "C"="#7570b3","D"="#e7298a", "E1" = "#66a61e", "E2" = "#66a61e")) +
   scale_linetype_manual(values = c("A"="solid",
                                    "B1"="solid", "B2"="dashed", "C"="solid","D"="solid", "E1" = "solid", "E2" = "dashed")) +
   labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
@@ -399,6 +399,37 @@ main <- ggplot() +
   guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
          color=guide_legend(keywidth = 3, keyheight = 1)) +
   theme(legend.position = c(0.92, 0.66))
+#annotation_custom(ggplotGrob(mini), xmin = as.Date("2021-05-1"), xmax = as.Date("2021-06-1"), 
+#                    ymin = 0, ymax = 300)
+main
+
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+#######
+
+#all models together
+PLOT="allmelt2_cowater"
+custombreaks <- seq(0, 700, 50)
+main <- ggplot() + 
+  geom_line(data=mp4a, aes(Date, swe_a, color="obs T", linetype="obs T"), size=1.5) +
+  geom_line(data=mp4b1, aes(Date, swe_b1, color="ELR T", linetype="ELR T"), size=1) +
+  geom_line(data=mp4b2, aes(Date, swe_b2, color="local lapse T", linetype="local lapse T"), size=1) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="C", linetype="C"), size=1) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="D", linetype="D"), size=1) +
+  geom_line(data=mp4e1, aes(Date, swe_e1, color="obs T & simpler model", linetype="obs T & simpler model"), size=1) +
+  geom_line(data=mp4e2, aes(Date, swe_e2, color="local lapse T & simpler model",  linetype="local lapse T & simpler model"), size=1) +
+  geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
+  scale_shape_manual(values=17) +
+  scale_color_manual(name="models", values=c("obs T"="black",
+                              "ELR T"="#d95f02", "local lapse T"="#d95f02", "C"="#7570b3","D"="#e7298a", "obs T & simpler model" = "#66a61e", "local lapse T & simpler model" = "#66a61e")) +
+  scale_linetype_manual(values = c("obs T"="solid",
+                                   "ELR T"="solid", "local lapse T"="dashed", "C"="solid","D"="solid", "obs T & simpler model" = "solid", "local lapse T & simpler model" = "dashed")) +
+  labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
+  PlotFormat + 
+  #theme(legend.position = c(0.95, 0.8)) +
+  scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
+  guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
+         color=guide_legend(keywidth = 3, keyheight = 1)) +
+  theme(legend.position = c(0.85, 0.8))
   #annotation_custom(ggplotGrob(mini), xmin = as.Date("2021-05-1"), xmax = as.Date("2021-06-1"), 
 #                    ymin = 0, ymax = 300)
 main
