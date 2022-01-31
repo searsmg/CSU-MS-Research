@@ -413,16 +413,16 @@ main <- ggplot() +
   geom_line(data=mp4a, aes(Date, swe_a, color="obs T", linetype="obs T"), size=1.5) +
   geom_line(data=mp4b1, aes(Date, swe_b1, color="ELR T", linetype="ELR T"), size=1) +
   geom_line(data=mp4b2, aes(Date, swe_b2, color="local lapse T", linetype="local lapse T"), size=1) +
-  geom_line(data=mp4c, aes(Date, swe_c, color="C", linetype="C"), size=1) +
-  geom_line(data=mp4d, aes(Date, swe_d, color="D", linetype="D"), size=1) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="obs T, lapse Td", linetype="obs T, lapse Td"), size=1) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="local lapse T and Td", linetype="local lapse T and Td"), size=1) +
   geom_line(data=mp4e1, aes(Date, swe_e1, color="obs T & simpler model", linetype="obs T & simpler model"), size=1) +
   geom_line(data=mp4e2, aes(Date, swe_e2, color="local lapse T & simpler model",  linetype="local lapse T & simpler model"), size=1) +
   geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
   scale_shape_manual(values=17) +
   scale_color_manual(name="models", values=c("obs T"="black",
-                              "ELR T"="#d95f02", "local lapse T"="#d95f02", "C"="#7570b3","D"="#e7298a", "obs T & simpler model" = "#66a61e", "local lapse T & simpler model" = "#66a61e")) +
+                              "ELR T"="#d95f02", "local lapse T"="#d95f02", "obs T, lapse Td"="#7570b3","local lapse T and Td"="#e7298a", "obs T & simpler model" = "#66a61e", "local lapse T & simpler model" = "#66a61e")) +
   scale_linetype_manual(values = c("obs T"="solid",
-                                   "ELR T"="solid", "local lapse T"="dashed", "C"="solid","D"="solid", "obs T & simpler model" = "solid", "local lapse T & simpler model" = "dashed")) +
+                                   "ELR T"="solid", "local lapse T"="dashed", "obs T, lapse Td"="solid","local lapse T and Td"="solid", "obs T & simpler model" = "solid", "local lapse T & simpler model" = "dashed")) +
   labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
   PlotFormat + 
   #theme(legend.position = c(0.95, 0.8)) +
