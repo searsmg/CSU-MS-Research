@@ -134,27 +134,27 @@ windRose(uz21, ws = "ws_ms", wd = "dir", ws2 = NA, wd2 = NA,
 #define the wind directions
 uz20 <- uz20 %>%
   mutate(aspect_dir = case_when(
-    between(dir, 0, 22.5) ~"North",
-    between(dir, 22.5, 67.5) ~ "Northeast",
-    between(dir, 67.5, 112.5) ~ "East",
-    between(dir, 112.5, 157.5) ~ "Southeast",
-    between(dir, 157.5, 202.5) ~ "South",
-    between(dir, 202.5, 247.5) ~ "Southwest",
-    between(dir, 247.5, 292.5) ~ "West",
-    between(dir, 292.5, 337.5) ~ "Northwest",
-    between(dir, 337.5, 360) ~ "North"))
+    between(dir, 0, 22.5) ~"N",
+    between(dir, 22.5, 67.5) ~ "NE",
+    between(dir, 67.5, 112.5) ~ "E",
+    between(dir, 112.5, 157.5) ~ "SE",
+    between(dir, 157.5, 202.5) ~ "S",
+    between(dir, 202.5, 247.5) ~ "SW",
+    between(dir, 247.5, 292.5) ~ "W",
+    between(dir, 292.5, 337.5) ~ "NW",
+    between(dir, 337.5, 360) ~ "N"))
 
 uz21 <- uz21 %>%
   mutate(aspect_dir = case_when(
-    between(dir, 0, 22.5) ~"North",
-    between(dir, 22.5, 67.5) ~ "Northeast",
-    between(dir, 67.5, 112.5) ~ "East",
-    between(dir, 112.5, 157.5) ~ "Southeast",
-    between(dir, 157.5, 202.5) ~ "South",
-    between(dir, 202.5, 247.5) ~ "Southwest",
-    between(dir, 247.5, 292.5) ~ "West",
-    between(dir, 292.5, 337.5) ~ "Northwest",
-    between(dir, 337.5, 360) ~ "North"))
+    between(dir, 0, 22.5) ~"N",
+    between(dir, 22.5, 67.5) ~ "NE",
+    between(dir, 67.5, 112.5) ~ "E",
+    between(dir, 112.5, 157.5) ~ "SE",
+    between(dir, 157.5, 202.5) ~ "S",
+    between(dir, 202.5, 247.5) ~ "SW",
+    between(dir, 247.5, 292.5) ~ "W",
+    between(dir, 292.5, 337.5) ~ "NW",
+    between(dir, 337.5, 360) ~ "N"))
 
 #filter for each year and variable for r2 > 0.2
 uz20dew <- uz20 %>%
@@ -164,7 +164,7 @@ uz20dew <- uz20 %>%
 
 uz20t <- uz20 %>%
   filter(tr2 > 0.2) %>%
-  mutate(sign = ifelse(dslope > 0, "positive TEG",
+  mutate(sign = ifelse(tslope > 0, "positive TEG",
                        "negative TEG"))
 
 uz21dew <- uz21 %>%
@@ -174,13 +174,14 @@ uz21dew <- uz21 %>%
 
 uz21t <- uz21 %>%
   filter(tr2 > 0.2) %>%
-  mutate(sign = ifelse(dslope > 0, "positive TEG",
+  mutate(sign = ifelse(tslope > 0, "positive TEG",
                        "negative TEG"))
 
 uz_t <- bind_rows(uz21t, uz20t)
 
 uz_d <- bind_rows(uz21dew, uz20dew)
 
+uz_d$sign = factor(uz_d$sign, levels=c('positive DTEG','negative DTEG'))
 
 PLOT="uzdew_aspectboxplot"
 ggplot(uz_d, aes(x=aspect_dir, y=dslope, fill=sign)) +
@@ -193,7 +194,11 @@ ggplot(uz_d, aes(x=aspect_dir, y=dslope, fill=sign)) +
        fill="") +
   theme(legend.position = "bottom")
 
-ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+ggsave(paste(PLOT,".png",sep=""), width = 18, height = 9)
+
+uz_t$sign = factor(uz_t$sign, levels=c('positive TEG','negative TEG'))
+
+uz_t <- uz_t[-c(657,658,925,926), ]
 
 PLOT="uzt_aspectboxplot"
 ggplot(uz_t, aes(x=aspect_dir, y=tslope, fill=sign)) +
@@ -205,5 +210,5 @@ ggplot(uz_t, aes(x=aspect_dir, y=tslope, fill=sign)) +
        fill="") +
   theme(legend.position = "bottom")
 
-ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+ggsave(paste(PLOT,".png",sep=""), width = 18, height = 9)
 
