@@ -413,18 +413,19 @@ main <- ggplot() +
   geom_line(data=mp4a, aes(Date, swe_a, color="obs T", linetype="obs T"), size=1.5) +
   geom_line(data=mp4b1, aes(Date, swe_b1, color="ELR T", linetype="ELR T"), size=1) +
   geom_line(data=mp4b2, aes(Date, swe_b2, color="local lapse T", linetype="local lapse T"), size=1) +
-  geom_line(data=mp4c, aes(Date, swe_c, color="obs T, lapse Td", linetype="obs T, lapse Td"), size=1) +
-  geom_line(data=mp4d, aes(Date, swe_d, color="local lapse T and Td", linetype="local lapse T and Td"), size=1) +
+  geom_line(data=mp4c, aes(Date, swe_c, color="obs T & lapse Td", linetype="obs T & lapse Td"), size=1) +
+  geom_line(data=mp4d, aes(Date, swe_d, color="local lapse T & Td", linetype="local lapse T & Td"), size=1) +
   geom_line(data=mp4e1, aes(Date, swe_e1, color="obs T & simpler model", linetype="obs T & simpler model"), size=1) +
   geom_line(data=mp4e2, aes(Date, swe_e2, color="local lapse T & simpler model",  linetype="local lapse T & simpler model"), size=1) +
   geom_point(data=swe17, aes(x=Date, y=SWE, shape="observed\nSWE"), size=6) +
   scale_shape_manual(values=17) +
   scale_color_manual(name="models", values=c("obs T"="black",
-                              "ELR T"="#d95f02", "local lapse T"="#d95f02", "obs T, lapse Td"="#7570b3","local lapse T and Td"="#e7298a", "obs T & simpler model" = "#66a61e", "local lapse T & simpler model" = "#66a61e")) +
+                              "ELR T"="#d95f02", "local lapse T"="#d95f02", "obs T & lapse Td"="#7570b3","local lapse T & Td"="#e7298a", "obs T & simpler model" = "#66a61e", "local lapse T & simpler model" = "#66a61e")) +
   scale_linetype_manual(values = c("obs T"="solid",
-                                   "ELR T"="solid", "local lapse T"="dashed", "obs T, lapse Td"="solid","local lapse T and Td"="solid", "obs T & simpler model" = "solid", "local lapse T & simpler model" = "dashed")) +
+                                   "ELR T"="solid", "local lapse T"="dashed", "obs T & lapse Td"="solid","local lapse T & Td"="solid", "obs T & simpler model" = "solid", "local lapse T & simpler model" = "dashed")) +
   labs(y="SWE (mm)", shape="", color="models", linetype="models", x="") +
   PlotFormat + 
+  guides(shape = guide_legend(order = 2),col = guide_legend(order = 1)) +
   #theme(legend.position = c(0.95, 0.8)) +
   scale_y_continuous(breaks = custombreaks, labels = every_nth(custombreaks, 2, inverse=TRUE)) +
   guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
@@ -606,8 +607,15 @@ ggplot(allmod, aes(x=Date)) +
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
+
+PLOT="mfvar"
+ggplot(mfvar, aes(x=Date, y=MFt)) +
+  geom_line(size=1) +
+  PlotFormat +
+  labs(y="Temperature index melt factors \n(Fassnacht et al., 2017)")
   
-  
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
 #compare nrcum to each scenario (4)
 b1swe <- ggplot(allmod, aes(x=swe_a, y=swe_b1)) + 
   geom_line() +
@@ -648,12 +656,12 @@ all_melt <- all_melt %>%
   group_by(model) %>%
   mutate(melt_cum = cumsum(melt))
 
-mod_names <- c(`melt_b1` = "B1",
-               `melt_b2` = "B2",
-               `melt_c` = "C",
-               `melt_d` = "D",
-               `melt_e1` = "E1",
-               `melt_e2` = "E2")
+mod_names <- c(`melt_b1` = "ELR T",
+               `melt_b2` = "local lapse T",
+               `melt_c` = "obs T & lapse Td",
+               `melt_d` = "local lapse T & Td",
+               `melt_e1` = "obs T & simpler model",
+               `melt_e2` = "local lapse T & simpler model")
 
 PlotFormat = theme(axis.text=element_text(size=20, color="black"),
                    axis.title.x=element_text(size=22, hjust=0.5, margin=margin(t=20, r=20, b=20, l=20), color="black"),              
@@ -668,12 +676,12 @@ PlotFormat = theme(axis.text=element_text(size=20, color="black"),
                    #panel.grid.minor = element_blank(),
                    panel.background = element_blank(), 
                    #axis.line = element_line(colour = "black"),
-                   strip.text = element_text(size=28),
+                   strip.text = element_text(size=23),
                    panel.border = element_rect(colour = "black", fill=NA, size=1),
                    legend.key=element_blank())
 
 
-PLOT ="melt_1to1_cum"
+PLOT ="melt_1to1_cum_update"
 ggplot(all_melt) +
   geom_point(aes(x=melt_a_cum, y=melt_cum, color=model), size=2.5) +
   facet_wrap(~model, labeller = as_labeller(mod_names)) +
@@ -684,7 +692,7 @@ ggplot(all_melt) +
                                    "melt_e2" = "#66a61e")) +
   geom_abline(intercept = 0, slope = 1, size=1) +
   theme(legend.position = "none") +
-  labs(x="Scenario A cumulative melt (mm)", y="Cumulative melt (mm)") 
+  labs(x="Obs T cumulative melt (mm)", y="Cumulative melt (mm)") 
 
 ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
 
