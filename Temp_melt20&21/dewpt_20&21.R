@@ -169,8 +169,37 @@ ggplot() +
   geom_smooth(data=all21_example, aes(x=Elevation, y=AirT_C), 
               method = "lm", se = FALSE, color="black", linetype="dashed")
   
+
+all21_mp4 <- all21 %>%
+  filter(ID == "MP4") %>%
+  mutate(month = month(Datetime)) %>%
+  filter(month %in% c(5,6)) %>%
+  mutate(year = year(Datetime))
+
+
+all20_mp4 <- all20 %>%
+  filter(ID == "MP4") %>%
+  mutate(month = month(Datetime)) %>%
+  filter(month %in% c(5,6)) %>%
+  mutate(year = year(Datetime))
+
+allmp4 <- bind_rows(all20_mp4, all21_mp4)
+
+PLOT = "general T for mp4"
+ggplot(allmp4) +
+  geom_line(aes(x=Datetime, y=AirT_C,  color="Air T"), size=1) +
+  geom_line(aes(x=Datetime, y=dewpoint, color="Dew pt T"), size=1) +
+  facet_grid(~year, scales="free") +
+  PlotFormat +
+  scale_color_manual(values = c("Air T" = "black", "Dew pt T" = "blue")) +
+  labs(y=expression("Temperature "  (degree*C)), color="", x="") +
+  theme(legend.position = "bottom",
+        plot.margin = margin(5, 100, 5, 5)) +
+  theme(panel.spacing = unit(2, "lines"),
+        legend.box.margin=margin(-50,-5,-5,-5))
   
-  
+ggsave(paste(PLOT,".png",sep=""), width = 15, height = 9)
+
   
 
 #stat_cor(label.x = 3300, label.y = 5) +
